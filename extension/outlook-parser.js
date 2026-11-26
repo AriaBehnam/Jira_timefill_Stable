@@ -44,7 +44,7 @@
     },
     showAsPrefixes: ["show as", "shown as", "status", "mostra come", "stato"],
     // Labels whose title starts with one of these are skipped (not read at all).
-    cancelledPrefixes: ["canceled:", "cancelled:", "annullato:", "annullata:", "annullato -"],
+    cancelledPrefixes: ["canceled:", "cancelled:", "annullato:", "annullata:", "annullato -", "cancellato:", "cancellata:"],
     declinedPrefixes: ["declined:", "rifiutato:", "rifiutata:"],
     // OPTIONAL "By <organizer>" part. No organizer in the label = your own event.
     organizerPrefixes: ["by ", "organizer:", "organizer ", "organiser ", "organizzatore:", "organizzatore ", "organizzato da "],
@@ -289,7 +289,8 @@
     if (!subject) subject = (parts.find((p, i) => !isMetaPart(p, opts, i)) || "").trim();
     if (CONFIG.meaninglessTitle.test(subject)) return null; // no real title: not an event we can use
     const cancelled = startsWithAny(text, CONFIG.cancelledPrefixes) || startsWithAny(subject, CONFIG.cancelledPrefixes);
-    const declined = startsWithAny(text, CONFIG.declinedPrefixes) || startsWithAny(subject, CONFIG.declinedPrefixes);
+    // declined: the title says so, or your response in the label does ("…, Declined" / "Rifiutato")
+    const declined = startsWithAny(text, CONFIG.declinedPrefixes) || startsWithAny(subject, CONFIG.declinedPrefixes) || response === "declined";
     return { subject, start, end, allDay, busy, organizer, response, own: organizer === null, cancelled, declined, label: text };
   }
 
@@ -324,7 +325,7 @@
       labelsSeen++;
       const ev = parseLabel(label, opts);
       if (!ev) continue;
-      if (ev.cancelled || ev.declined) { skipped++; continue; }
+      if (ev.cancelled || ev.declined) skipped++; // kept (flagged): shown in grey, never proposed
       const key = eventKey(ev);
       if (seen.has(key)) continue;
       seen.add(key);
@@ -452,7 +453,8 @@
     for (const d of visibleDates) {
       const dayStart = `${d}T00:00`, dayEnd = `${addDays(d, 1)}T00:00`;
       const fresh = events.filter((e) => e.start < dayEnd && e.end > dayStart)
-        .map(({ subject, start, end, allDay, busy, organizer = null, response = null }) => ({ subject, start, end, allDay, busy, organizer, response }));
+        .map(({ subject, start, end, allDay, busy, organizer = null, response = null, cancelled = false, declined = false }) =>
+          ({ subject, start, end, allDay, busy, organizer, response, ...(cancelled ? { cancelled } : {}), ...(declined ? { declined } : {}) }));
       if (keepAllDayFor.includes(d)) {
         const k = (e) => `${String(e.subject).toLowerCase()}|${e.start}|${e.end}`;
         const have = new Set(fresh.map(k));

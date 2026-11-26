@@ -280,9 +280,10 @@ const VIEW_KEEP = {
 function weekGrid(plan) {
   // every list a day may have, so a day from an older version (or a half-built one) can't break the page
   const keep = VIEW_KEEP[calView] || VIEW_KEEP.both;
-  const days = (plan.days || []).map((d) => ({ segments: [], unmatched: [], ignored: [], dismissed: [], candidates: [], entries: [], ...d }))
+  const days = (plan.days || []).map((d) => ({ segments: [], unmatched: [], ignored: [], dismissed: [], skipped_events: [], candidates: [], entries: [], ...d }))
     .map((d) => ({ ...d, segments: d.segments.filter(keep),
-      unmatched: calView === "jira" ? [] : d.unmatched, dismissed: calView === "jira" ? [] : d.dismissed }));
+      unmatched: calView === "jira" ? [] : d.unmatched, dismissed: calView === "jira" ? [] : d.dismissed,
+      skipped_events: calView === "jira" ? [] : d.skipped_events }));
   const broken = [];
   /** Draw one part of one day; if it fails, log it and draw a placeholder instead of losing the whole page. */
   const safe = (d, part, fn, fallback) => {
@@ -313,7 +314,7 @@ function weekGrid(plan) {
         <div class="cal-dt"><b>${esc(label)}</b><span class="state state-${d.state}">${stateText[d.state]}</span></div>
         ${d.working && !d.calendar_read ? `<div class="small warn" title="This day has not been read from Outlook yet">⚠ calendar not read</div>` : d.read_at ? `<div class="small muted" title="last read from Outlook">read ${esc(d.read_at.slice(5).replace("T", " "))}</div>` : ""}
         <div class="cal-nums">${d.working
-          ? `<span title="already in Jira" style="color:var(--logged)">${hrs(d.logged)}</span> · <span title="to fill" style="color:var(--planned)">${hrs(d.planned)}</span> · <span title="missing" style="color:var(--missing)">${hrs(d.missing)}</span> / ${hrs(d.target)}`
+          ? `<span title="already in Jira" style="color:var(--logged)">${hrs(d.logged)}</span> · <span title="to fill" style="color:var(--planned)">${hrs(d.planned)}</span> · <span title="missing" style="color:var(--missing)">${hrs(d.date > today ? d.missing_past : d.missing)}</span> / ${hrs(d.target)}`
           : d.logged || d.planned ? `${d.logged ? `<span style="color:var(--logged)">in Jira ${hrs(d.logged)}</span>` : ""}${d.logged && d.planned ? " · " : ""}${d.planned ? `<span style="color:var(--planned)">to fill ${hrs(d.planned)}</span>` : ""}` : "&nbsp;"}</div>
         ${d.entries.length ? `<button class="btn tiny" data-fill-day="${d.date}">Review day (${d.entries.length})</button>` : ""}
       </div>`;
@@ -338,6 +339,9 @@ function weekGrid(plan) {
     const style = `top:${top}px;height:${h}px;${laneCss(s)}`;
     if (s.kind === "lunch") return `<div class="blk lunch" style="top:${top}px;height:${h}px"><span>lunch</span></div>`;
     if (s.kind === "missing") {
+      // days after today: their time hasn't come, nothing is missing yet: left blank (you can still drag there).
+      // Today shows it all (the rest of today faded).
+      if (s.future && d.date > today) return "";
       const pick = esc(JSON.stringify({ date: d.date, start: fmtHM(s.start), end: fmtHM(s.end), label: "" }));
       const slot = esc(JSON.stringify({ date: d.date, start: s.start, end: s.end }));
       return `<div class="blk missing ${s.future ? "future" : ""}" style="${style}" data-pick='${pick}' data-slot='${slot}' title="${time} missing — click to assign all of it, or drag over it to choose a part (15-minute steps)">
@@ -365,6 +369,13 @@ function weekGrid(plan) {
       <div class="bt"><span class="tm">${time}</span> · <b class="hm">${hrs(mins)}</b>${s.kind !== "logged" ? ` · ${KIND_TEXT[s.kind]}` : ""}</div></div>`;
   };
   // calendar events you marked "Don't fill": a thin marker you can undo
+  // a declined or cancelled event: grey like "not filled" (it never takes time by itself). Click it to fill it anyway.
+  const declinedBlock = (d, u) => {
+    const top = y(u.s) + 1, h = Math.max(y(u.e) - y(u.s) - 3, 12);
+    const pick = esc(JSON.stringify({ date: d.date, start: u.start, end: u.end, label: u.subject, replaces: u.key }));
+    return `<div class="blk dismissed declined" style="top:${top}px;height:${h}px;${laneCss(u)}" data-pick='${pick}' title="${esc(`${u.subject} ${u.start}–${u.end} — ${u.why}, not filled. Click to fill it anyway.`)}">
+      <div class="bl">${esc(u.subject)}</div><span class="small">${esc(u.why)}</span></div>`;
+  };
   const dismissedBlock = (d, u) => {
     if (u.all_day) return "";
     const top = y(u.s) + 1, h = Math.max(y(u.e) - y(u.s) - 3, 12);
@@ -384,6 +395,7 @@ function weekGrid(plan) {
     ...d.segments.filter((s) => s.kind !== "lunch").map((s) => ({ ref: s, start: s.start, end: s.end })),
     ...d.unmatched.filter((u) => !u.all_day).map((u) => ({ ref: u, start: u.s, end: u.e })),
     ...d.dismissed.filter((u) => !u.all_day).map((u) => ({ ref: u, start: u.s, end: u.e })),
+    ...d.skipped_events.map((u) => ({ ref: u, start: u.s, end: u.e })),
   ]), 1));
   const colTemplate = `52px ${lanesOf.map((n) => `minmax(${150 + 110 * (n - 1)}px, ${1 + 0.75 * (n - 1)}fr)`).join(" ")}`;
   // each block on its own too: one odd worklog or event is left out (and logged), the rest of the day is drawn
@@ -393,6 +405,8 @@ function weekGrid(plan) {
       ${each(d, d.segments, block, "blocks")}
       ${each(d, d.unmatched, unmatchedBlock, "events without a project")}
       ${each(d, d.dismissed, dismissedBlock, "events you don't fill")}
+      ${each(d, d.skipped_events, declinedBlock, "declined or cancelled events")}
+      ${offHours(d)}
       <div class="hour-lines" aria-hidden="true"></div>
       ${d.date === today && nowMin > lo && nowMin < hi ? `<div class="now" style="top:${y(nowMin)}px"></div>` : ""}
     </div>`).join("");
@@ -413,6 +427,15 @@ function weekGrid(plan) {
         <div class="cal-g" style="height:${height}px">${gutter}</div>${cols}
       </div>
     </div>`;
+}
+
+/** A soft grey behind the hours outside your working time (before the day starts, after it ends). Days without
+    working hours (weekends, holidays) are grey as a whole already. Only a background: blocks stay on top. */
+function offHours(d) {
+  const w = d.windows || [];
+  if (!d.working || !w.length) return "";
+  const band = (a, b) => (b > a ? `<div class="offhours" style="top:${yOf(a)}px;height:${yOf(b) - yOf(a)}px" aria-hidden="true"></div>` : "");
+  return band(grid.lo, Math.max(grid.lo, w[0][0])) + band(Math.min(grid.hi, w[w.length - 1][1]), grid.hi);
 }
 
 /** Overlapping blocks of a day get a lane each (lane / lanes), so they can be drawn side by side. */
@@ -519,7 +542,7 @@ function drawStatus(plan, fresh, sameWeek, scrollY, calScroll = null) {
       <div class="legend">
         <span><i style="background:var(--logged)"></i>already logged</span><span><i style="background:var(--planned)"></i>to fill</span>
         <span><i style="background:var(--vacation)"></i>vacation</span><span><i class="lg-missing"></i>missing</span>
-        <span><i class="lg-unmatched"></i>not matched</span><span><i class="lg-diff"></i>Jira ≠ calendar</span>
+        <span><i class="lg-unmatched"></i>not matched</span><span><i class="lg-diff"></i>Jira ≠ calendar</span><span><i class="lg-dismissed"></i>not filled / declined</span>
       </div>
     </div>
     ${weekGrid(plan)}
@@ -531,6 +554,20 @@ function drawStatus(plan, fresh, sameWeek, scrollY, calScroll = null) {
     window.scrollTo(0, scrollY);
     const box = document.getElementById("cal-scroll");
     if (box && calScroll !== null) box.scrollTop = calScroll;
+  }
+  if (plan.jira_ok) prefetchNeighbours();
+}
+
+/* The week before and after the one shown are loaded from Jira in the background (Outlook is not touched), so
+   going to them with ‹ › is instant. Once per week per page visit; a Refresh reads again. */
+const prefetched = new Set();
+async function prefetchNeighbours() {
+  for (const delta of [-7, 7]) {
+    const from = iso(addDays(weekStart, delta)), to = iso(addDays(weekStart, delta + 4));
+    if (prefetched.has(from)) continue;
+    prefetched.add(from);
+    await new Promise((r) => setTimeout(r, 300)); // after the shown week is drawn
+    try { await api(`/api/plan?from=${from}&to=${to}&prefetch=1`); } catch { prefetched.delete(from); }
   }
 }
 
@@ -731,10 +768,17 @@ const dragStep = (ev) => (ev.altKey ? 5 : 15);
 let sel = null;
 const minuteAt = (col, clientY) => grid.lo + ((clientY - col.getBoundingClientRect().top) / PX_PER_HOUR) * 60;
 view.addEventListener("pointerdown", (ev) => {
-  const el = ev.target.closest(".blk.missing[data-slot]");
-  if (!el || ev.button !== 0 || document.getElementById("pop").style.display === "block") return;
-  const col = el.closest(".cal-col");
-  sel = { el, col, slot: JSON.parse(el.dataset.slot), anchor: minuteAt(col, ev.clientY), x0: ev.clientX, y0: ev.clientY, moved: false, box: null };
+  if (ev.button !== 0 || document.getElementById("pop").style.display === "block") return;
+  // a missing (red) block: choose part of it. Empty space of a day, or anywhere with Shift held (also over other
+  // blocks): create an entry at the time you drag.
+  const missing = ev.target.closest(".blk.missing[data-slot]");
+  const col = ev.target.closest(".cal-col");
+  if (!col || !grid.editable && !missing) return;
+  let slot;
+  if (missing) slot = JSON.parse(missing.dataset.slot);
+  else if (ev.target === col || ev.target.closest(".blk.lunch") || ev.shiftKey) slot = { date: col.dataset.date, start: grid.lo, end: grid.hi };
+  else return;
+  sel = { el: missing || col, col, slot, anchor: minuteAt(col, ev.clientY), x0: ev.clientX, y0: ev.clientY, moved: false, box: null };
   ev.preventDefault();
 });
 window.addEventListener("pointermove", (ev) => {
@@ -779,6 +823,7 @@ const dayLabel = (date) => new Date(date + "T00:00").toLocaleDateString(undefine
 
 view.addEventListener("pointerdown", (ev) => {
   const el = ev.target.closest(".blk.movable[data-wl], .blk.editable[data-pl]");
+  if (ev.shiftKey) return; // Shift + drag creates a new entry (above), it never moves a block
   if (!el || ev.button !== 0 || ev.target.closest("button") || document.getElementById("pop").dataset.mode === "move") return;
   const wl = JSON.parse(el.dataset.wl || el.dataset.pl);
   const col = el.closest(".cal-col");
@@ -1199,7 +1244,7 @@ async function renderSettings() {
       <fieldset><legend>Jira</legend>
         ${f("Jira URL", txt("jira_url", s.jira_url, "https://yourcompany.atlassian.net", "url"))}
         ${f("Sign-in", `<select name="jira_auth"><option value="browser" ${s.jira_auth !== "token" ? "selected" : ""}>Use my Jira login in this browser (no token)</option><option value="token" ${s.jira_auth === "token" ? "selected" : ""}>E-mail + API token</option></select>`,
-            "With “my Jira login”, just be signed in to Jira in this browser. Use a token only if that doesn't work.")}
+            "Recommended: e-mail + API token. It keeps working when your Jira login in the browser expires (it is stored only in this browser, apart from the other settings). “My Jira login” needs no setup, but you must stay signed in to Jira in this browser.")}
         ${f("E-mail (token only)", txt("jira_email", s.jira_email, "you@company.com"))}
         ${f("API token (token only)", txt("jira_token", "", s.token_set ? "•••••••• saved — leave empty to keep" : "paste token", "password"),
             `Create one at <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank">id.atlassian.com → Security → API tokens</a>. Stored only in this browser profile.`)}
@@ -1423,6 +1468,7 @@ document.addEventListener("click", async (ev) => {
     try { await api("/api/outlook/open", { method: "POST", body: { date: iso(weekStart) } }); } catch (e) { toast(e.message, true); }
     return;
   }
+  if (t.id === "refresh-status") prefetched.clear();
   if (t.id === "refresh-status") { t.disabled = true; t.textContent = "Reading…"; return renderStatus(true); }
   if (t.dataset.cfgAdd) {
     const body = document.querySelector(t.dataset.cfgAdd === "role" ? "#cfg-roles tbody" : "#cfg-phases tbody");
@@ -1500,14 +1546,31 @@ async function renderCharts(fresh = false) {
   if (!live) return;
   view.innerHTML = `<div class="bar-row"><h1>Charts</h1></div><div class="loading">${fresh ? "Reading your hours from Jira…" : "Loading…"}</div>`;
   let r;
-  try { r = await api(`/api/report${fresh ? "?fresh=1" : ""}`); }
+  // reading Jira: this week first (shown in a moment), then the whole history, drawn again when it is there
+  const quick = fresh || !chartsRead;
+  try { r = await api(`/api/report?${quick ? "quick=1&" : ""}${fresh ? "fresh=1" : ""}`); }
   catch (e) { if (live()) view.innerHTML = `<div class="bar-row"><h1>Charts</h1></div><div class="banner err">${esc(e.message)}</div>`; return; }
   if (!live()) return;
   lastReport = r;
-  chartsRead = true;
   if (!chartSel) chartSel = { mode: "week", key: iso(mondayOf(dOf(r.today))) };
   if (!calMonth) calMonth = r.today.slice(0, 7);
   drawCharts();
+  if (!r.partial) { chartsRead = true; return; }
+  showChartsLoading(true);
+  let full;
+  try { full = await api(`/api/report${fresh ? "?fresh=1" : ""}`); }
+  catch (e) { if (live()) { showChartsLoading(false); toast(`Older weeks: ${e.message}`, true); } return; }
+  if (!live()) return;
+  lastReport = full;
+  chartsRead = true;
+  drawCharts();
+}
+/** "loading older weeks…" next to the Charts title while the whole history is read */
+function showChartsLoading(on) {
+  const h = view.querySelector(".bar-row");
+  if (!h) return;
+  h.querySelector(".charts-more")?.remove();
+  if (on) h.insertAdjacentHTML("beforeend", `<span class="small muted charts-more">loading older weeks…</span>`);
 }
 
 const granToggle = (chart) => `<div class="seg" role="group" aria-label="period">${["week", "month"].map((g) =>

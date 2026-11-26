@@ -547,3 +547,31 @@ test("security: an Outlook tab that doesn't show the calendar (e.g. mail) is nev
     assert.deepEqual(moves, []);
   } finally { chrome.tabs = saved; quiet.forEach(([k, f]) => { console[k] = f; }); }
 });
+
+test("speed: the weeks next to the shown one are loaded from Jira only (Outlook untouched), then shown with no reading", async () => {
+  const saved = chrome.tabs, realFetch = globalThis.fetch;
+  let outlookCalls = 0, jiraCalls = 0;
+  chrome.tabs = { ...saved, query: async () => [{ id: 3, url: "https://outlook.office.com/calendar/view/week" }],
+    sendMessage: async () => { outlookCalls++; return { ok: true, visibleDates: [] }; }, update: async () => { outlookCalls++; } };
+  globalThis.fetch = async (url, init) => { if (String(url).includes("atlassian")) jiraCalls++; return realFetch(url, init); };
+  const quiet = ["info", "log", "table", "groupCollapsed", "groupEnd"].map((k) => [k, console[k]]);
+  quiet.forEach(([k]) => { console[k] = () => {}; });
+  try {
+    assert.deepEqual(await handle("GET", "/api/plan?from=2026-11-16&to=2026-11-20&prefetch=1"), { ok: true });
+    assert.equal(outlookCalls, 0, "Outlook is not touched by the background loading");
+    assert.ok(jiraCalls > 0, "Jira was read");
+    const before = jiraCalls;
+    store.calendar_cache["2026-11-16"] = { read_at: "x", events: [] }; // that week was read from Outlook before
+    for (const d of ["2026-11-17", "2026-11-18", "2026-11-19", "2026-11-20"]) store.calendar_cache[d] = { read_at: "x", events: [] };
+    await handle("GET", "/api/plan?from=2026-11-16&to=2026-11-20");
+    assert.equal(jiraCalls, before, "going to that week reads nothing again");
+  } finally { chrome.tabs = saved; globalThis.fetch = realFetch; quiet.forEach(([k, f]) => { console[k] = f; }); }
+});
+
+test("speed: the Charts read this week first (quick), then the whole history", async () => {
+  const q = await handle("GET", "/api/report?quick=1&fresh=1");
+  assert.equal(q.partial, true);
+  assert.equal(q.weeks.length, 1, "only the current week");
+  const full = await handle("GET", "/api/report?fresh=1");
+  assert.equal(full.partial, undefined);
+});

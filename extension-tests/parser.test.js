@@ -59,7 +59,7 @@ test("cancelled events are flagged; non-events are ignored", () => {
   assert.equal(parse("Reminder at 08:00"), null); // no date
 });
 
-test("readPage: dedupes, uses column headers for visible days, skips cancelled", () => {
+test("readPage: dedupes, uses column headers for visible days, flags cancelled", () => {
   const doc = fakeDoc({
     [P.CONFIG.eventSelector]: [
       { "aria-label": "Alpha E layout review, 08:00 to 11:30, Monday, November 9, 2026, Busy" },
@@ -72,7 +72,8 @@ test("readPage: dedupes, uses column headers for visible days, skips cancelled",
       "Thursday, November 12, 2026", "Friday, November 13, 2026", "November 2026"].map((t) => ({ "aria-label": t })),
   });
   const r = P.readPage(doc, { now });
-  assert.deepEqual(r.events.map((e) => e.subject), ["Alpha E layout review", "Ferie"]);
+  assert.deepEqual(r.events.filter((e) => !e.cancelled).map((e) => e.subject), ["Alpha E layout review", "Ferie"]);
+  assert.deepEqual(r.events.filter((e) => e.cancelled).map((e) => e.subject), ["Canceled: old sync"]); // kept, shown grey
   assert.deepEqual(r.visibleDates, ["2026-11-09", "2026-11-10", "2026-11-11", "2026-11-12", "2026-11-13"]);
   assert.equal(r.method, "headers");
 });
@@ -111,7 +112,7 @@ test("a leading 'X icon, ' is not part of the title", () => {
   assert.equal(parse("New app icon, 09:00 to 10:00, Monday, November 9, 2026").subject, "New app icon");
 });
 
-test("Canceled: / Annullata: / Declined: labels are skipped", () => {
+test("Canceled: / Annullata: / Declined: labels and a declined response are flagged (shown grey, never proposed)", () => {
   assert.equal(parse("Declined: Alpha E review, 08:00 to 09:00, Monday, November 9, 2026").declined, true);
   assert.equal(parse("Annullata: riunione, dalle 13:30 alle 14:00, lunedì 9 novembre 2026").cancelled, true);
   assert.equal(parse("Recurring icon, Canceled: daily, 08:00 to 08:15, Monday, November 9, 2026").cancelled, true);
@@ -122,8 +123,11 @@ test("Canceled: / Annullata: / Declined: labels are skipped", () => {
     "Alpha E kept, 10:00 to 11:00, Monday, November 9, 2026",
   ].map((l) => ({ "aria-label": l })) });
   const r = P.readPage(doc, { now });
-  assert.deepEqual(r.events.map((e) => e.subject), ["Alpha E kept"]);
+  assert.deepEqual(r.events.filter((e) => !e.cancelled && !e.declined).map((e) => e.subject), ["Alpha E kept"]);
   assert.equal(r.skipped, 3);
+  // declined only by your response in the label (no "Declined:" in the title)
+  assert.equal(parse("Alpha E review, 08:00 to 09:00, Monday, November 9, 2026, By Organizer Name, Declined").declined, true);
+  assert.equal(parse("Cancellato: riunione, dalle 13:30 alle 14:00, lunedì 9 novembre 2026").cancelled, true);
 });
 
 test("de-dupe by title + start: same title at another time is a different event", () => {

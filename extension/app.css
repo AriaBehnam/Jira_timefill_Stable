@@ -154,6 +154,8 @@ tr.closed td { opacity: .55; }
   background-image: repeating-linear-gradient(to bottom, var(--line) 0 1px, transparent 1px var(--hour));
 }
 .cal-col.off { background-color: #f1eee6; }
+/* outside your working time (before the day starts, after it ends): a soft grey, behind everything */
+.offhours { position: absolute; left: 0; right: 0; background: rgba(120, 112, 96, .045); pointer-events: none; z-index: 0; }
 /* hour lines drawn OVER the events (and fainter half and quarter hours), so you can read where each hour starts and ends */
 .cal-col .hour-lines {
   position: absolute; inset: 0; pointer-events: none; z-index: 3;
@@ -293,9 +295,12 @@ legend + * { clear: both; }
 .blk.editable:hover .rs::after { content: ""; position: absolute; left: 42%; right: 42%; height: 2px; border-radius: 2px; background: rgba(255,255,255,.75); }
 .blk.editable:hover .rs-top::after { top: 2px; }
 .blk.editable:hover .rs-bot::after { bottom: 2px; }
-.blk.dismissed { background: transparent; border: 1px dashed var(--line); color: var(--muted); font-size: 11px; opacity: .8;
+.blk.dismissed { background: #dedbd3; border: 1px solid #c9c5bb; color: #6b675e; font-size: 11px; /* you chose not to fill it: grey */
   display: flex; align-items: flex-start; justify-content: space-between; gap: 4px; text-decoration: line-through; }
 .blk.dismissed .x { text-decoration: none; }
+.blk.dismissed.declined { cursor: pointer; }
+.blk.dismissed.declined:hover { border-color: var(--muted); }
+.lg-dismissed { background: #dedbd3; border: 1px solid #c9c5bb; }
 .pl-times { display: flex; gap: 10px; margin-top: 8px; }
 .pl-times input { width: 92px; }
 #pop label.small { display: block; margin-top: 6px; }
@@ -519,6 +524,7 @@ table.cfg td.c-act .btn { margin-left: 2px; }
 :root[data-theme="dark"] .warn { color: #e6b450; }
 /* the week calendar */
 :root[data-theme="dark"] .cal-col.off { background-color: #1a1b1d; }
+:root[data-theme="dark"] .offhours { background: rgba(0, 0, 0, .16); }
 :root[data-theme="dark"] .today, :root[data-theme="dark"] .cal-col.today { background-color: #26241b; }
 :root[data-theme="dark"] .cal-col .hour-lines {
   background-image:
@@ -533,7 +539,7 @@ table.cfg td.c-act .btn { margin-left: 2px; }
 :root[data-theme="dark"] .blk.unmatched:hover { background: #44391f; }
 :root[data-theme="dark"] .blk.diff-ev, :root[data-theme="dark"] .btn.diff-btn.on, :root[data-theme="dark"] .ad-sum.warn { background: #3a2817; color: #f5b27a; }
 :root[data-theme="dark"] .blk.diff-ev:hover { background: #4a321c; }
-:root[data-theme="dark"] .blk.dismissed { color: var(--muted); }
+:root[data-theme="dark"] .blk.dismissed, :root[data-theme="dark"] .lg-dismissed { background: #34363a; border-color: #45484d; color: #a29d93; }
 :root[data-theme="dark"] .rv tr.fut td { background: #232528; }
 :root[data-theme="dark"] .diag { background: #26282b; }
 /* the small calendar and the charts */

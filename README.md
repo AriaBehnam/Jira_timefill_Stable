@@ -86,8 +86,10 @@ Updates are then done by hand (see [Update](#update-to-a-new-version)).
 
 Open Timefill → **Settings**.
 
-1. **Jira URL:** `https://yourcompany.atlassian.net`. Keep *Sign-in* on "Use my Jira login in this browser" and
-   make sure you are signed in to Jira in the same browser. Press **Test Jira connection**.
+1. **Jira URL:** `https://yourcompany.atlassian.net`.
+   **Sign-in:** choose **E-mail + API token** (recommended, see [Jira API token](#jira-api-token)) and fill in your
+   Jira e-mail and the token. Or keep "Use my Jira login in this browser": that needs no token, but you must stay
+   signed in to Jira in the same browser. Press **Test Jira connection**.
 2. **Track from:** the first day Timefill should look at. Nothing before it is read or counted as missing.
 3. **Projects query:** which Jira issues are "yours". The default is `assignee = currentUser() ORDER BY key`.
    Timefill also adds every issue you logged time on.
@@ -98,6 +100,30 @@ Open Timefill → **Settings**.
 7. **Phases & roles:** how your Jira issue summaries are written (see below).
 8. Go to **Projects** and press **↻ Detect new projects**. Then give each project one or more **calendar
    keywords**: words you use in your event titles, e.g. `big job`.
+
+### Jira API token
+
+An API token lets Timefill reach Jira with your account, **without depending on your browser's Jira login**. That
+login expires from time to time (or works differently with company single sign-on), and Timefill can then not read
+or post until you sign in again. With a token it keeps working. Timefill can do with a token exactly what you can do
+in Jira yourself, nothing more.
+
+**Create one (2 minutes):**
+
+1. Open <https://id.atlassian.com/manage-profile/security/api-tokens> and sign in with your Jira account.
+2. Click **Create API token**.
+3. Give it a name you recognise, e.g. `Timefill`, choose an expiry date, and click **Create**.
+4. Click **Copy**. Atlassian shows the token only once; if you lose it, create a new one.
+5. In Timefill → **Settings** → *Sign-in*, choose **E-mail + API token**, fill in the e-mail of your Jira account,
+   paste the token, and press **Test Jira connection**.
+
+**Good to know:**
+
+- The token is stored only in your browser profile, separately from the other settings, and is sent only to your own
+  `*.atlassian.net` site. It is never shown again in Timefill (the field shows "saved").
+- When the token expires, create a new one and paste it in Settings.
+- To stop it working at any time, revoke it on the same Atlassian page.
+- Treat it like a password: don't share it or put it in a file others can read.
 
 ### Phases & roles
 
@@ -123,7 +149,7 @@ Add, remove or reorder rows to match how your team works.
 
 1. Open your **Outlook web calendar** in the same browser, in **Week** or **Work week** view, and keep that tab open.
 2. Open Timefill → **Status**. Your week is read from Outlook and Jira. A small badge in the Outlook tab shows
-   a red dot while Timefill reads and a green one when it's done, with the days it read.
+   a yellow dot while Timefill reads and a green one when it's done, with the days it read.
 3. Check the calendar:
 
    | Colour | Meaning |
@@ -134,6 +160,7 @@ Add, remove or reorder rows to match how your team works.
    | striped red | missing hours |
    | dashed yellow | event without a matching project (click it to choose one) |
    | orange | Jira and your calendar don't match |
+   | grey, crossed out | not filled: an event you chose not to fill (↺ brings it back), or one you declined or that was cancelled (click it to fill it anyway) |
 
 4. Fix anything that's wrong:
    - **Click a blue block** to change its project, phase or time, or choose *Don't fill*. **Send to Jira** in that
@@ -141,6 +168,8 @@ Add, remove or reorder rows to match how your team works.
    - **Drag a block** to move it, or drag its top or bottom edge to change its length. Steps are 15 minutes; hold
      Alt for 5.
    - **Drag over a red block** to assign part of it, or click it to assign all of it.
+   - **Drag in any empty part of a day** to create a new entry at that time. **Hold Shift** while dragging to create
+     one on top of other blocks (without Shift, dragging a block moves it).
    - **Click a green block** to change a worklog that is already in Jira. Timefill asks before it changes Jira.
    - **Click an orange block** to see what Jira has and what your calendar has. For an event that isn't in Jira,
      press **Fill it** (its project, its time) or **Other project…**; press **Ignore** if it's fine as it is. The
@@ -256,8 +285,9 @@ Each chart has a *Show as table* view.
   `*.atlassian.net` site, and Jira requests never follow a redirect to another address.
 - **Updates** come only from Timefill's stable release on GitHub, and only when you press **Update now**. The small
   update helper the installer sets up does nothing else, and only Timefill can start it.
-- **No API token needed.** Timefill uses your normal Jira login in the browser. If you choose to use an API token
-  instead, it is stored only in your browser profile, apart from the settings, and never shown or sent elsewhere.
+- **Your API token** (recommended, see [Jira API token](#jira-api-token)) is stored only in your browser profile, apart
+  from the other settings, sent only to your own Jira site, and never shown again. Without a token, Timefill uses
+  your normal Jira login in the browser.
 
 ---
 

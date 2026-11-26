@@ -229,7 +229,7 @@ export function buildDay(day, events, worklogs, projects, s, overrides, now, ign
   const onLeave = leaveLogged && oofAllDay;
   if (onLeave) free = [];
 
-  const cands = [], unmatched = [], ignored = [], dismissed = [], allDayEvents = [];
+  const cands = [], unmatched = [], ignored = [], dismissed = [], allDayEvents = [], skippedEvents = [];
   let skipped = 0;
   // calendar events you edited (moved, resized, other issue, "don't fill") -> event key -> overrides
   const replaced = new Map();
@@ -238,7 +238,14 @@ export function buildDay(day, events, worklogs, projects, s, overrides, now, ign
     if (o.date === day && !o.skip && !beforeStart(day, s))
       cands.push([0, 0, hm(o.start), hm(o.end), { issue: o.issue, label: o.label || "manual", kind: "planned", source: "manual", override_id: o.id, replaces: o.replaces || null }]);
   for (const ev of beforeStart(day, s) ? [] : events) {
-    if (isSkippedEvent(ev)) { skipped++; continue; } // removed BEFORE overlaps are resolved
+    if (isSkippedEvent(ev)) { // removed BEFORE overlaps are resolved; shown in grey on the calendar
+      skipped++;
+      const sp = daySpan(ev.start, ev.end, day);
+      // filled anyway by you (clicked, assigned): your entry takes its place, the grey block goes
+      if (sp && !ev.allDay && !replaced.has(eventKey(ev))) skippedEvents.push({ key: eventKey(ev), subject: ev.subject, s: sp[0], e: sp[1], start: fmt(sp[0]), end: fmt(sp[1]),
+        why: ev.declined || /^(?:[^,]{1,40}\s+icon,\s*)*(?:declined|rifiutat)/i.test(String(ev.subject || "").trim()) ? "declined" : "cancelled" });
+      continue;
+    }
     const span = daySpan(ev.start, ev.end, day);
     if (!span) continue;
     let [st, en] = span;
@@ -331,7 +338,10 @@ export function buildDay(day, events, worklogs, projects, s, overrides, now, ign
   const diffs = beforeStart(day, s) || onLeave ? { list: [], ignored: [] }
     : compareDay(day, events, loggedSegs, pieces, projects, s, overrides, rnd, ignoredDiffs, segments, links);
   for (let i = unmatched.length - 1; i >= 0; i--) if (diffs.linked?.has(unmatched[i].key)) unmatched.splice(i, 1);
-  const missing = free.map(([a, b]) => ({ start: a, end: b, start_hm: fmt(a), end_hm: fmt(b), minutes: b - a, future: isFuture(b) }));
+  // Today, a gap that runs past "now" is cut there: the part already past is missing, the rest is just the future.
+  const cut = Math.round((now - dateOf(day)) / 60000);
+  const gaps = free.flatMap(([a, b]) => (cut > a && cut < b ? [[a, cut], [cut, b]] : [[a, b]]));
+  const missing = gaps.map(([a, b]) => ({ start: a, end: b, start_hm: fmt(a), end_hm: fmt(b), minutes: b - a, future: isFuture(b) }));
   for (const m of missing) segments.push({ start: m.start, end: m.end, kind: "missing", future: m.future });
   // the lunch band marks only lunch time that nothing is booked on
   if (windows.length === 2) {
@@ -353,9 +363,10 @@ export function buildDay(day, events, worklogs, projects, s, overrides, now, ign
   else if (missing.length || entries.length) state = "upcoming";
   else state = "complete";
   return {
-    date: day, working: windows.length > 0, target, logged, planned,
+    date: day, working: windows.length > 0, windows, target, logged, planned, // windows = working time [[start, end], …] in minutes
     missing: missing.reduce((a, m) => a + m.minutes, 0), missing_past: missPast, state,
     segments, entries, missing_slots: missing, logged_items: loggedItems, unmatched, ignored, skipped, dismissed, on_leave: onLeave,
+    skipped_events: skippedEvents, // declined / cancelled events of the day (grey, never proposed)
     diffs: diffs.list, diffs_ignored: diffs.ignored,
     candidates: allDay.list, all_day_room: allDay.room, all_day_timed: allDay.timed, // candidates = every all-day event of the day
     overrides: overrides.filter((o) => o.date === day),
@@ -440,6 +451,9 @@ function compareDay(day, events, loggedSegs, pieces, projects, s, overrides, rnd
     const link = (w.id != null && links.byId?.[String(w.id)]) || links.byContent?.[linkKey(w.issue, w.start, w.seconds / 60)];
     if (link) {
       for (const e of cal) if ((link.event_keys || []).some((k) => k === e.key || k.endsWith(`|${e.key}`))) e.linked = true;
+      // also the events it was made from by title (an entry you assigned by hand remembers no event key)
+      const names = new Set((link.labels || []).map(norm).filter((l) => l && l !== "manual"));
+      for (const e of cal) if (names.has(norm(e.subject)) && (e.all_day || overlaps(e, W))) e.linked = true;
       seg.label = (link.labels || []).filter((l) => l && l !== "manual").join("; ") || seg.label;
       continue;
     }

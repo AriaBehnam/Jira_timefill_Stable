@@ -3,6 +3,79 @@
 All notable changes to the Timefill Chrome extension (`extension/`). Timefill is designed by Aria Behnam.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions match `extension/manifest.json`.
 
+## [2.5.1] - 2026-11-27
+
+### Added
+- **Fill a declined or cancelled meeting anyway.** Click its grey block: the usual box opens (project, phase, time),
+  and it becomes a normal "to fill" block that you approve as usual; the grey block goes away. Timefill remembers you
+  chose to fill it, also after posting.
+
+## [2.5.0] - 2026-11-27
+
+### Changed
+- **Declined and cancelled events are shown in grey** on the Status calendar, like the events you chose not to fill
+  (crossed out, labelled *declined* or *cancelled*). They were left out entirely; they still never take time and are
+  never proposed. The legend says "not filled / declined".
+
+### Fixed
+- **Events you declined were proposed (blue)** when the title had no "Declined:" prefix and only your response in the
+  label said so ("…, Declined"). Your response now counts too. Also recognised: Italian "Cancellato:" /
+  "Cancellata:".
+
+## [2.4.5] - 2026-11-27
+
+### Changed
+- **The badge in Outlook is yellow while Timefill reads** (blinking), green when it is done, and red only when the
+  calendar was not read. The yellow stays at least about a second, so you also see it when a read is quick. (It was
+  a blinking red, hard to tell from "not read".)
+
+## [2.4.4] - 2026-11-27
+
+### Changed
+- **Days after today are not shown as missing.** Their time hasn't come yet, so the calendar is simply blank there
+  (you can still drag to plan something) and their day total shows nothing missing. Today still shows its missing
+  time: the part already past in red, the rest of today faded.
+
+## [2.4.3] - 2026-11-27
+
+### Changed
+- The grey of the hours outside your working time is lighter (about half as strong), in light and dark mode.
+
+## [2.4.2] - 2026-11-27
+
+### Changed
+- **Hours outside your working time are shaded** in a soft grey on the Status calendar (before your day starts and
+  after it ends, following each day's working hours, e.g. a shorter Friday), in light and dark mode. It is only a
+  background: blocks stay on top, and you can still drag and create entries there.
+
+## [2.4.1] - 2026-11-27
+
+### Changed
+- **Events you chose not to fill are grey.** They were transparent with a dashed outline and easy to miss; now they
+  are a solid grey block (crossed out, with ↺ to fill them again), in light and dark mode, and the legend shows
+  "not filled".
+
+## [2.4.0] - 2026-11-27
+
+### Added
+- **Create an entry with the mouse anywhere.** Drag in any empty part of a day (also over the lunch band) to create
+  an entry at that time, not only over red "missing" blocks. Hold **Shift** while dragging to create one on top of
+  other blocks; without Shift, dragging a block still moves it.
+
+### Changed
+- **Faster loading.**
+  - Jira worklogs are read for several issues at a time instead of one after the other.
+  - Status page: the week you open is read and shown first; then the week before and after are loaded from Jira in
+    the background (Outlook is not touched for them), so going to them with ‹ › is instant.
+  - Charts: this week is shown first, in a moment; the whole history follows and the charts are drawn again
+    ("loading older weeks…" meanwhile).
+- **Jira API token recommended.** The README explains step by step how to create one and why it is the better
+  choice (it keeps working when the browser's Jira login expires); Settings says so too.
+
+### Fixed
+- **An event you assigned to a project by hand still showed as "not matched"** next to its worklog after posting
+  (worklogs posted before 2.0 remembered no event for it). It is now matched by its title and time.
+
 ## [2.3.0] - 2026-11-26
 
 ### Added

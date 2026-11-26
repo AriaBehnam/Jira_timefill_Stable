@@ -390,10 +390,20 @@ export function clearJiraCopy() { jiraWeeks.clear(); reportCopy = null; }
 
 /* Charts: your worklogs since "Track from", read when you open the Charts page or press Refresh. */
 let reportCopy = null;
-async function computeReport(fresh) {
+async function computeReport(fresh, quick = false) {
   const s = await getSettings();
   const today = isoOf(new Date());
   const from = s.track_from && s.track_from <= today ? s.track_from : addDaysIso(today, -56);
+  // quick: only this week (shown first, in a moment); the whole history follows with a normal request
+  if (quick && (fresh || !reportCopy || reportCopy.from !== from || reportCopy.to !== today)) {
+    const [y, m, d] = today.split("-").map(Number);
+    const monday = addDaysIso(today, -((new Date(y, m - 1, d).getDay() + 6) % 7));
+    const qFrom = monday > from ? monday : from;
+    const j = await jira();
+    const worklogs = await j.myWorklogsBetween(await accountId(j), qFrom, today);
+    const projects = (await loadProjects()).projects;
+    return { ...buildReport(worklogs, projects, s, { from: qFrom, to: today, today }), jira_read_at: new Date().toISOString(), partial: true };
+  }
   if (fresh || !reportCopy || reportCopy.from !== from || reportCopy.to !== today) {
     const j = await jira();
     reportCopy = { from, to: today, worklogs: await j.myWorklogsBetween(await accountId(j), from, today), at: new Date().toISOString() };
@@ -409,7 +419,7 @@ const summaryOf = (issue) => {
   return "";
 };
 
-async function computePlan(from, to, { strict = false, fresh = false } = {}) {
+async function computePlan(from, to, { strict = false, fresh = false, prefetch = false } = {}) {
   const s = await getSettings();
   const warnings = [];
   const key = `${from}|${to}`;
@@ -422,7 +432,8 @@ async function computePlan(from, to, { strict = false, fresh = false } = {}) {
     return false;
   };
   if (strict) { try { outlook = await readOutlookTabs(); } catch (e) { warnings.push(`Outlook: ${e.message}`); } }
-  else if (fresh || await neverRead()) { try { outlook = await readOutlookWeek(from, to, s); } catch (e) { warnings.push(`Outlook: ${e.message}`); } }
+  // prefetch (the weeks next to the one you look at): Jira only, Outlook is never touched for it
+  else if (!prefetch && (fresh || await neverRead())) { try { outlook = await readOutlookWeek(from, to, s); } catch (e) { warnings.push(`Outlook: ${e.message}`); } }
   else { try { outlook.tabs = (await chrome.tabs.query({ url: OUTLOOK_TABS })).length; } catch { /* only shown as a count */ } }
   if (outlook.navigation && /not moved|did not/.test(outlook.navigation)) warnings.push(`Outlook ${outlook.navigation}.`);
   for (const r of outlook.results || []) if (r?.paused) warnings.push(r.error);
@@ -671,8 +682,11 @@ export async function handle(method, path, body = {}) {
       const s = await getSettings();
       return proj.allIssueOptions((await loadProjects()).projects, s.vacation_issue);
     }
-    if (method === "GET" && p === "/api/report") return computeReport(q.fresh === "1");
-    if (method === "GET" && p === "/api/plan") return computePlan(q.from, q.to, { fresh: q.fresh === "1" });
+    if (method === "GET" && p === "/api/report") return computeReport(q.fresh === "1", q.quick === "1");
+    if (method === "GET" && p === "/api/plan") {
+      if (q.prefetch === "1") { await computePlan(q.from, q.to, { prefetch: true }); return { ok: true }; } // loads Jira into the copy
+      return computePlan(q.from, q.to, { fresh: q.fresh === "1" });
+    }
     if (method === "POST" && p === "/api/fill") return fill(body);
     if (method === "PUT" && (m = /^\/api\/worklogs\/([^/]+)\/([^/]+)$/.exec(p))) return moveWorklog(decodeURIComponent(m[1]), decodeURIComponent(m[2]), body);
 

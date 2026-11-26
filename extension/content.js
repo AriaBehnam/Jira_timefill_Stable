@@ -233,7 +233,20 @@
   /* --- small badge while Timefill is open (inside a shadow root so it can't affect Outlook's styles) --- */
   let badgeHost = null;
   function removeBadge() { badgeHost?.remove(); badgeHost = null; }
+  // Yellow (blinking) while reading, green when done, red when not read. The yellow stays at least ~1 s, so you see
+  // it also when a read is quick.
+  let readingSince = 0, badgeTicket = 0;
   function showBadge(res, s) {
+    const ticket = ++badgeTicket;
+    if (res.reading) readingSince = Date.now();
+    else if (readingSince) {
+      const wait = 1000 - (Date.now() - readingSince);
+      readingSince = 0;
+      if (wait > 0) { setTimeout(() => { if (ticket === badgeTicket) drawBadge(res, s); }, wait); return; }
+    }
+    drawBadge(res, s);
+  }
+  function drawBadge(res, s) {
     if (!s.show_outlook_badge) { removeBadge(); return; }
     if (!badgeHost) {
       badgeHost = document.createElement("div");
@@ -243,7 +256,7 @@
         button{font:12px/1.2 "Segoe UI",sans-serif;background:#23221f;color:#fffdf8;border:0;border-radius:99px;
                padding:6px 12px 6px 10px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.25);opacity:.88}
         button:hover{opacity:1} i{display:inline-block;width:8px;height:8px;border-radius:50%;background:#dc2626;margin-right:6px;transition:background .2s}
-        i.done{background:#22c55e} i.reading{animation:blink 1s ease-in-out infinite} @keyframes blink{50%{opacity:.35}}
+        i.done{background:#22c55e} i.reading{background:#facc15;animation:blink 1s ease-in-out infinite} @keyframes blink{50%{opacity:.35}}
       </style><button title="Go to Timefill (reads this calendar while Timefill is open, never edits it)"><i></i><span></span></button>`;
       root.querySelector("button").addEventListener("click", () => {
         try { chrome.runtime.sendMessage({ type: "open-app" }).catch(() => {}); } catch { /* extension reloaded */ }

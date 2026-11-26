@@ -159,15 +159,25 @@ export class JiraClient {
     const issues = await this.search(jql, ["summary"]);
     const after = dateOf(addDaysIso(from, -1)), before = dateOf(addDaysIso(to, 2));
     const out = [];
-    for (const iss of issues) {
+    // 6 issues at a time (much faster than one after the other); the result is in the same order as before
+    const perIssue = new Array(issues.length);
+    let next = 0;
+    const worker = async () => {
+      while (next < issues.length) {
+        const n = next++;
+        perIssue[n] = await this.worklogs(issues[n].key, after, before);
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(6, issues.length) }, worker));
+    issues.forEach((iss, n) => {
       const summary = (iss.fields || {}).summary || "";
-      for (const w of await this.worklogs(iss.key, after, before)) {
+      for (const w of perIssue[n]) {
         if ((w.author || {}).accountId !== accountId) continue;
         const start = jiraToLocal(w.started);
         if (start >= startStamp && start < endStamp)
           out.push({ id: w.id, issue: iss.key, summary, start, seconds: +(w.timeSpentSeconds || 0), comment: adfText(w.comment) });
       }
-    }
+    });
     return out;
   }
 

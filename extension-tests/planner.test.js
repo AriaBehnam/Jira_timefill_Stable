@@ -486,3 +486,39 @@ test("an event without a project keyword that you assigned by hand: in Jira, it 
   const done = buildDay(MON, [meeting], posted, [ALPHA], S, [{ id: "a1", date: MON, replaces: before.unmatched[0].key, skip: true, posted: true }], LATER);
   assert.deepEqual([done.unmatched.length, done.diffs.length, done.entries.length], [0, 0, 0]);
 });
+
+test("an event you assigned by hand (posted by an older version: no event key remembered) is not 'not matched' any more", () => {
+  const ev1 = ev("1 2 1 sync", MON, "10:00", "10:30"); // no project keyword
+  const posted = [{ id: "5", issue: "INT-19", start: `${MON}T10:00`, seconds: 1800, comment: "1 2 1 sync" }];
+  const links = { byId: { 5: { issue: "INT-19", start: `${MON}T10:00`, minutes: 30, event_keys: [], labels: ["1 2 1 sync"] } }, byContent: {} };
+  const day = buildDay(MON, [ev1], posted, [ALPHA], S, [], LATER, new Set(), {}, links);
+  assert.deepEqual(day.unmatched, []);
+  assert.deepEqual(day.diffs, []);
+});
+
+test("today: a missing gap that runs past 'now' is cut there (past part missing, the rest future)", () => {
+  const now = new Date(2026, 10, 9, 15, 0); // Monday 15:00
+  const day = buildDay(MON, [], [], [ALPHA], S, [], now);
+  const gaps = day.missing_slots.map((m) => [m.start_hm, m.end_hm, m.future]);
+  assert.ok(gaps.some(([a, b, f]) => b === "15:00" && f === false), JSON.stringify(gaps));
+  assert.ok(gaps.some(([a, b, f]) => a === "15:00" && f === true), JSON.stringify(gaps));
+  assert.equal(day.missing_past, day.missing_slots.filter((m) => !m.future).reduce((n, m) => n + m.minutes, 0));
+  assert.ok(day.missing_past < day.missing, "only time already past counts as missing so far");
+});
+
+test("declined and cancelled events are never proposed and are listed for the calendar (grey)", () => {
+  const evs = [ev("Alpha E review", MON, "09:00", "10:00", { declined: true }), ev("Canceled: Alpha sync", MON, "11:00", "12:00"), ev("Alpha E kept", MON, "14:00", "15:00")];
+  const day = buildDay(MON, evs, [], [ALPHA], S, [], LATER);
+  assert.deepEqual(day.entries.map((e) => e.start_hm), ["14:00"]);
+  assert.deepEqual(day.skipped_events.map((u) => [u.subject, u.start, u.why]), [["Alpha E review", "09:00", "declined"], ["Canceled: Alpha sync", "11:00", "cancelled"]]);
+});
+
+test("a declined meeting you fill anyway: your entry takes its place, the grey block goes", () => {
+  const meeting = ev("Alpha E review", MON, "09:00", "10:00", { declined: true });
+  const before = buildDay(MON, [meeting], [], [ALPHA], S, [], LATER);
+  assert.equal(before.skipped_events.length, 1);
+  const fill = [{ id: "f1", date: MON, start: "09:00", end: "10:00", issue: "PRJ-224", label: "Alpha E review", replaces: before.skipped_events[0].key }];
+  const after = buildDay(MON, [meeting], [], [ALPHA], S, fill, LATER);
+  assert.deepEqual(after.skipped_events, []);
+  assert.deepEqual(after.entries.map((e) => [e.issue, e.start_hm, e.end_hm]), [["PRJ-224", "09:00", "10:00"]]);
+});
