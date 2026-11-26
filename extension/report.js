@@ -1,5 +1,6 @@
 // Timefill — Jira hours from your Outlook calendar.
 // Copyright (c) 2026 Aria Behnam. Designed by Aria Behnam.
+// SPDX-License-Identifier: Apache-2.0 (see LICENSE and NOTICE)
 
 // Numbers for the Charts page, from your Jira worklogs since "Track from".
 //   - hours per project (per week or month)

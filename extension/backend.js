@@ -1,5 +1,6 @@
 // Timefill — Jira hours from your Outlook calendar.
 // Copyright (c) 2026 Aria Behnam. Designed by Aria Behnam.
+// SPDX-License-Identifier: Apache-2.0 (see LICENSE and NOTICE)
 
 // Runs inside the extension page. Answers the same "/api/..." calls the UI makes,
 // using chrome.storage for data, the Outlook tab for the calendar and Jira's REST API.

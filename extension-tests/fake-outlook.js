@@ -1,5 +1,6 @@
 // Timefill — Jira hours from your Outlook calendar.
 // Copyright (c) 2026 Aria Behnam. Designed by Aria Behnam.
+// SPDX-License-Identifier: Apache-2.0 (see LICENSE and NOTICE)
 
 // A fake Outlook week (2–6 Nov 2026) for the reader tests: some events on the page, and all-day events hidden
 // behind "N more events from <day>" buttons whose popups list them without a date (like the new Outlook).

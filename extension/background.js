@@ -1,5 +1,6 @@
 // Timefill — Jira hours from your Outlook calendar.
 // Copyright (c) 2026 Aria Behnam. Designed by Aria Behnam.
+// SPDX-License-Identifier: Apache-2.0 (see LICENSE and NOTICE)
 
 // Opens the Timefill page when you click the toolbar icon or the badge in Outlook.
 const APP = chrome.runtime.getURL("app.html");

@@ -1,5 +1,6 @@
 // Timefill — Jira hours from your Outlook calendar.
 // Copyright (c) 2026 Aria Behnam. Designed by Aria Behnam.
+// SPDX-License-Identifier: Apache-2.0 (see LICENSE and NOTICE)
 
 // Runs inside the Outlook web tab, but only while the Timefill page is open: Timefill injects this script and keeps a
 // connection to the tab. While connected it reads the calendar the page shows (via outlook-parser.js) on every view

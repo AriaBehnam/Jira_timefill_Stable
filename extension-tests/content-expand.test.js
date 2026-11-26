@@ -1,5 +1,6 @@
 // Timefill — Jira hours from your Outlook calendar.
 // Copyright (c) 2026 Aria Behnam. Designed by Aria Behnam.
+// SPDX-License-Identifier: Apache-2.0 (see LICENSE and NOTICE)
 
 // The Outlook reader with the real parser on a fake Outlook page: all-day events hidden behind
 // "N more events from <day>" buttons are read, also when the popup lists them without a date.

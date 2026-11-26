@@ -1,5 +1,6 @@
 // Timefill — Jira hours from your Outlook calendar.
 // Copyright (c) 2026 Aria Behnam. Designed by Aria Behnam.
+// SPDX-License-Identifier: Apache-2.0 (see LICENSE and NOTICE)
 
 // Only your calendar is read, decided from Outlook's calendar list only (never per event):
 //   - only "Calendar" ticked: every event is yours (also with the small month calendar's selected day on the page);

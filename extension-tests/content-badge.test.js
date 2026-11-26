@@ -1,5 +1,6 @@
 // Timefill — Jira hours from your Outlook calendar.
 // Copyright (c) 2026 Aria Behnam. Designed by Aria Behnam.
+// SPDX-License-Identifier: Apache-2.0 (see LICENSE and NOTICE)
 
 // The badge in Outlook: red (blinking) while reading, green when done, with the days read ("2–8 Nov").
 import assert from "node:assert/strict";

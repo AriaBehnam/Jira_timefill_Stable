@@ -1,5 +1,6 @@
 // Timefill — Jira hours from your Outlook calendar.
 // Copyright (c) 2026 Aria Behnam. Designed by Aria Behnam.
+// SPDX-License-Identifier: Apache-2.0 (see LICENSE and NOTICE)
 
 // Automatic reads (the reader re-reads by itself when the page changes): "+N more events" are opened only while
 // the Outlook tab is in the background, and the all-day events stored for a day are never wiped by a read that

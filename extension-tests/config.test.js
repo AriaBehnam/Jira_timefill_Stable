@@ -1,4 +1,5 @@
 // Timefill — Copyright (c) 2026 Aria Behnam. Designed by Aria Behnam.
+// SPDX-License-Identifier: Apache-2.0 (see LICENSE and NOTICE)
 import assert from "node:assert/strict";
 import { after, test } from "node:test";
 

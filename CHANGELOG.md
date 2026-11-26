@@ -3,6 +3,16 @@
 All notable changes to the Timefill Chrome extension (`extension/`). Timefill is designed by Aria Behnam.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions match `extension/manifest.json`.
 
+## [2.0.1] - 2026-11-26
+
+### Added
+- **License: Apache License 2.0** (`LICENSE`), with a `NOTICE` file ("Designed by Aria Behnam") that copies and
+  changed versions must keep. Every source file carries the license tag next to its copyright line.
+
+### Changed
+- **README rewritten for new users:** what you need, step-by-step install (download, unzip, load in Chrome),
+  first-time setup, everyday use, how to update and uninstall, troubleshooting, privacy & safety, and the license.
+
 ## [2.0.0] - 2026-11-25
 
 Version 2: a clean start of the repository (only the Chrome extension, its tests and documentation), after a

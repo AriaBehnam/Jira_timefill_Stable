@@ -1,5 +1,6 @@
 // Timefill — Jira hours from your Outlook calendar.
 // Copyright (c) 2026 Aria Behnam. Designed by Aria Behnam.
+// SPDX-License-Identifier: Apache-2.0 (see LICENSE and NOTICE)
 
 // Outlook label formats. When Microsoft changes the page, paste the new labels from
 // "Diagnose Outlook page" in here as test cases, then adjust outlook-parser.js until they pass.

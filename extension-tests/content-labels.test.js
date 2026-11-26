@@ -1,5 +1,6 @@
 // Timefill — Jira hours from your Outlook calendar.
 // Copyright (c) 2026 Aria Behnam. Designed by Aria Behnam.
+// SPDX-License-Identifier: Apache-2.0 (see LICENSE and NOTICE)
 
 // The new Outlook labels each tick box with what a click does: "Deselect calendar 'Calendar'" (ticked) and
 // "Select calendar 'Colleague'" (not ticked). Your calendar must be recognised from that, and never be unticked.

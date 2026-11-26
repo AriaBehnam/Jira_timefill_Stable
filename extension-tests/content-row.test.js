@@ -1,5 +1,6 @@
 // Timefill — Jira hours from your Outlook calendar.
 // Copyright (c) 2026 Aria Behnam. Designed by Aria Behnam.
+// SPDX-License-Identifier: Apache-2.0 (see LICENSE and NOTICE)
 
 // The new Outlook: ONE click on any "+N" expands the whole all-day row, the other buttons disappear, and a
 // multi-day event is ONE element. Every day it covers gets it.

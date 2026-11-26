@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Timefill – Jira hours from Outlook",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "author": "Aria Behnam",
   "description": "Reads your Outlook web calendar (read-only) while Timefill is open and proposes Jira worklogs that you approve one by one.",
   "action": {

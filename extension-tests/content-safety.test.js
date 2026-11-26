@@ -1,5 +1,6 @@
 // Timefill — Jira hours from your Outlook calendar.
 // Copyright (c) 2026 Aria Behnam. Designed by Aria Behnam.
+// SPDX-License-Identifier: Apache-2.0 (see LICENSE and NOTICE)
 
 // Calendar list safety: automatic reads never untick anything; two ticked calendars with your calendar's name = not read.
 import assert from "node:assert/strict";
