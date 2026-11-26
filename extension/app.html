@@ -5,6 +5,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Timefill</title>
+  <script src="theme.js"></script>
   <link rel="stylesheet" href="app.css">
 </head>
 <body>
@@ -16,7 +17,9 @@
       <a href="#/charts" data-view="charts">Charts</a>
       <a href="#/settings" data-view="settings">Settings</a>
     </nav>
+    <button id="theme-toggle" class="theme-btn" type="button" aria-label="Switch between light and dark"></button>
   </header>
+  <div id="update-bar" class="update-bar" hidden></div>
   <main id="view"></main>
   <div id="toast" role="status"></div>
   <datalist id="issues-dl"></datalist>

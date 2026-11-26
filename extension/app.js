@@ -543,9 +543,23 @@ function placePop(target, wide = false) {
   const r = target.getBoundingClientRect();
   pop.style.display = "block";
   const left = Math.min(r.right + 8, window.innerWidth - pop.offsetWidth - 12);
-  pop.style.left = `${left < r.right ? Math.max(12, r.left - pop.offsetWidth - 8) : left}px`;
-  pop.style.top = `${Math.max(12, Math.min(r.top, window.innerHeight - pop.offsetHeight - 12))}px`;
+  const x = left < r.right ? Math.max(12, r.left - pop.offsetWidth - 8) : left;
+  const y = Math.max(12, Math.min(r.top, window.innerHeight - pop.offsetHeight - 12));
+  pop.style.left = `${x}px`;
+  pop.style.top = `${y}px`;
+  // the box stays next to its block: when the page or the calendar scrolls, it moves with the block
+  popAnchor = { el: target, dx: x - r.left, dy: y - r.top };
 }
+let popAnchor = null;
+function followAnchor() {
+  const pop = document.getElementById("pop");
+  if (!popAnchor || pop.style.display !== "block" || !popAnchor.el.isConnected) return;
+  const r = popAnchor.el.getBoundingClientRect();
+  pop.style.left = `${r.left + popAnchor.dx}px`;
+  pop.style.top = `${r.top + popAnchor.dy}px`;
+}
+// capture: also the calendar's own scrolling (it scrolls inside its box, not the page)
+document.addEventListener("scroll", followAnchor, { capture: true, passive: true });
 async function mountPicker(label, current, target) {
   const box = document.getElementById("pk");
   box.innerHTML = `<div class="small muted">Loading projects…</div>`;
@@ -1176,6 +1190,12 @@ async function renderSettings() {
   view.innerHTML = `
     <div class="bar-row"><h1>Settings</h1><span class="grow"></span><button class="btn primary" id="save">Save</button></div>
     <form class="settings" id="sform" autocomplete="off">
+      <fieldset><legend>Updates</legend>
+        ${f("Timefill version", `<b>${esc(chrome.runtime.getManifest().version)}</b>
+          <button type="button" class="btn" id="upd-check" style="margin-left:10px">Check for updates</button>
+          <button type="button" class="btn primary" id="upd-go" hidden>Update now</button> <span id="upd-status" class="small muted"></span>`,
+          "Updates come from Timefill's stable release on GitHub, installed with one click (your settings are kept). Needs Timefill installed with “Install Timefill.cmd”.")}
+      </fieldset>
       <fieldset><legend>Jira</legend>
         ${f("Jira URL", txt("jira_url", s.jira_url, "https://yourcompany.atlassian.net", "url"))}
         ${f("Sign-in", `<select name="jira_auth"><option value="browser" ${s.jira_auth !== "token" ? "selected" : ""}>Use my Jira login in this Chrome (no token)</option><option value="token" ${s.jira_auth === "token" ? "selected" : ""}>E-mail + API token</option></select>`,
@@ -1276,6 +1296,71 @@ function collectSettings() {
   return o;
 }
 
+/* ---------------------------------------------------------------- light / dark */
+// The ☾ / ☀ button in the top-right corner. theme.js sets the theme before the page is drawn; your choice is
+// remembered in this browser (until then, your system's setting is followed).
+function showThemeButton() {
+  const dark = document.documentElement.dataset.theme === "dark";
+  const b = document.getElementById("theme-toggle");
+  if (!b) return;
+  b.textContent = dark ? "☀" : "☾";
+  b.title = dark ? "Light mode" : "Dark mode";
+}
+function toggleTheme() {
+  const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem("timefill_theme", next); } catch { /* private window */ }
+  showThemeButton();
+}
+showThemeButton();
+
+/* -------------------------------------------------------------------- updates */
+// The update helper (set up by "Install Timefill.cmd") checks Timefill's stable release on GitHub and installs it.
+// Without the installer (e.g. a copy loaded from a downloaded folder) there is no helper: updates are done by hand.
+const UPDATER = "com.timefill.updater";
+const askUpdater = (cmd) => new Promise((resolve) => {
+  try {
+    chrome.runtime.sendNativeMessage(UPDATER, { cmd }, (r) => {
+      const err = chrome.runtime.lastError;
+      resolve(err ? { ok: false, missing: true, error: err.message } : r || { ok: false, error: "no answer" });
+    });
+  } catch (e) { resolve({ ok: false, missing: true, error: e.message }); }
+});
+function showUpdate(r) {
+  const bar = document.getElementById("update-bar");
+  const go = document.getElementById("upd-go"), status = document.getElementById("upd-status");
+  if (r.ok && r.update) {
+    bar.hidden = false;
+    bar.innerHTML = `Timefill <b>${esc(r.latest)}</b> is available (you have ${esc(r.installed || chrome.runtime.getManifest().version)}).
+      <button class="btn tiny primary" id="upd-bar-go">Update now</button>`;
+  } else bar.hidden = true;
+  if (status) status.textContent = r.ok ? (r.update ? `version ${r.latest} is available` : "you have the latest version")
+    : r.missing ? "updates by one click need Timefill installed with “Install Timefill.cmd” (see the README)" : `couldn't check: ${r.error}`;
+  if (go) { go.hidden = !(r.ok && r.update); go.textContent = r.ok && r.update ? `Update to ${r.latest}` : "Update now"; }
+}
+async function checkUpdates(asked) {
+  // quietly once a day when Timefill opens; always when you press "Check for updates"
+  const KEY = "timefill_update_check";
+  let last = 0;
+  try { last = +localStorage.getItem(KEY) || 0; } catch { /* private window */ }
+  if (!asked && Date.now() - last < 24 * 3600 * 1000) return;
+  const status = document.getElementById("upd-status");
+  if (asked && status) status.textContent = "checking…";
+  const r = await askUpdater("check");
+  try { localStorage.setItem(KEY, String(Date.now())); } catch { /* private window */ }
+  if (!asked && !r.ok) return; // no helper: nothing to show unasked
+  showUpdate(r);
+}
+async function runUpdate(btn) {
+  btn.disabled = true;
+  btn.textContent = "Updating…";
+  const r = await askUpdater("update");
+  if (!r.ok) { btn.disabled = false; btn.textContent = "Update now"; return toast(`Update failed: ${r.error}`, true); }
+  toast(`Updated to Timefill ${r.version}. Restarting…`);
+  await chrome.storage.local.set({ reopen_after_update: true });
+  setTimeout(() => chrome.runtime.reload(), 800); // the new version starts and opens Timefill again
+}
+
 /* --------------------------------------------------------------------- events */
 document.addEventListener("click", async (ev) => {
   const pop = document.getElementById("pop");
@@ -1358,6 +1443,9 @@ document.addEventListener("click", async (ev) => {
     catch (e) { pre.textContent = e.message; }
     return;
   }
+  if (t.id === "theme-toggle") return toggleTheme();
+  if (t.id === "upd-check") return checkUpdates(true);
+  if (t.id === "upd-go" || t.id === "upd-bar-go") return runUpdate(t);
   if (t.id === "test-jira" || t.id === "test-cal") {
     const out = document.getElementById(t.id === "test-jira" ? "tj" : "tc");
     out.textContent = "saving & testing…";
@@ -1741,6 +1829,7 @@ window.addEventListener("error", (ev) => showCrash(ev.error || ev.message));
 window.addEventListener("unhandledrejection", (ev) => showCrash(ev.reason));
 loadIssueOptions();
 watchOutlookTabs().catch(() => {}); // the Outlook tabs are read only while this page is open
+checkUpdates(false);
 try { route(); } catch (e) {
   showCrash(e);
   view.innerHTML = `<div class="banner err">Timefill could not open this page: ${esc(e.message)}. Details are in the console (F12).</div>`;

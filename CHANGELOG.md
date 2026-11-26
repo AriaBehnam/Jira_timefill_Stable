@@ -3,6 +3,37 @@
 All notable changes to the Timefill Chrome extension (`extension/`). Timefill is designed by Aria Behnam.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions match `extension/manifest.json`.
 
+## [2.2.0] - 2026-11-26
+
+### Added
+- **Dark mode.** A **☾ / ☀** button in the top-right corner switches between light and dark. Until you choose, Timefill
+  follows your system's setting; your choice is remembered in this browser. The colours keep their meaning (green in
+  Jira, blue to fill, red missing, yellow not matched, orange different); only the surroundings turn dark. The theme
+  is set before the page is drawn, so it never flashes white.
+
+## [2.1.0] - 2026-11-26
+
+### Added
+- **Windows installer.** Double-click `Install Timefill.cmd` (no administrator rights): it copies Timefill to
+  `%LOCALAPPDATA%\Timefill`, gives that copy Timefill's fixed identity, sets up the update helper for Chrome and
+  Edge, opens the extensions page and copies the folder for "Load unpacked" (the one step a browser only lets you do
+  yourself). `Uninstall Timefill.cmd` removes it again.
+- **Update with one click.** Settings → **Updates** shows your version, **Check for updates** and **Update now**; a
+  line at the top of Timefill says when a new version is out (checked at most once a day). The update helper
+  downloads the latest **stable** release from GitHub (`Jira_timefill_Stable`) only, checks it is Timefill,
+  replaces the files and Timefill restarts and opens again. Your settings are kept. Needs the installer; a copy
+  loaded by hand is updated by hand as before. New permission: `nativeMessaging` (to talk to the update helper).
+
+### Changed
+- **README:** installing with the installer, updating with one click, uninstalling; the developer section is
+  removed.
+
+## [2.0.2] - 2026-11-26
+
+### Fixed
+- **The box of an event stays next to its event when you scroll.** It used to stay in the same place on the
+  screen while the calendar moved under it; now it moves with its block, also when only the calendar scrolls.
+
 ## [2.0.1] - 2026-11-26
 
 ### Added

@@ -18,6 +18,13 @@ async function openApp() {
 }
 
 chrome.action.onClicked.addListener(openApp);
+
+// After "Update" in Timefill, the extension restarts with the new version: open Timefill again.
+chrome.storage.local.get("reopen_after_update").then((o) => {
+  if (!o.reopen_after_update) return;
+  chrome.storage.local.remove("reopen_after_update");
+  openApp();
+}).catch(() => {});
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg?.type === "open-app") openApp();
 });

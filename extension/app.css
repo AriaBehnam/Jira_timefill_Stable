@@ -142,6 +142,9 @@ tr.closed td { opacity: .55; }
 .cal-g .hr:first-child { transform: none; }
 .cal-ad { border-left: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 4px; min-height: 28px; display: flex; flex-wrap: wrap; gap: 3px; align-content: flex-start; align-items: flex-start; }
 #pop .pop-actions { flex-wrap: wrap; }
+.update-bar { display: flex; gap: 12px; align-items: center; justify-content: center; padding: 8px 16px;
+  background: color-mix(in srgb, var(--planned) 12%, var(--paper)); border-bottom: 1px solid var(--line); font-size: 13px; }
+.update-bar[hidden] { display: none; }
 .rv-all { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; white-space: nowrap; }
 .ad-chip.off { text-decoration: line-through; display: inline-flex; gap: 4px; align-items: center; }
 .ad-chip.off .x { text-decoration: none; color: var(--muted); padding: 0; line-height: 1; }
@@ -472,3 +475,69 @@ table.cfg td.c-act .btn { margin-left: 2px; }
 .ad-timed { margin: 0 0 6px; }
 .ad-sum { font-size: 12.5px; padding: 6px 8px; background: var(--bg); border-radius: 6px; }
 .ad-sum.warn { background: #fff0e0; color: #8a3f05; }
+
+/* ------------------------------------------------------------------ light / dark */
+.theme-btn { margin-left: auto; border: 1px solid var(--line); background: var(--paper); color: var(--ink); width: 34px; height: 34px;
+  border-radius: 50%; cursor: pointer; font-size: 16px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
+.theme-btn:hover { border-color: var(--muted); }
+
+/* Dark: the same colours mean the same things (green in Jira, blue to fill, red missing, orange different);
+   only the surroundings are dark. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #161719;
+  --paper: #1f2124;
+  --ink: #e9e6df;
+  --muted: #a29d93;
+  --line: #34373b;
+  --accent: #e0662c;
+  --logged: #3b8a56;
+  --planned: #4171d8;
+  --vacation: #8e62cc;
+  --missing: #e0574c;
+  --lunch: #3a3b3f;
+  --c-other: #7c7970;
+}
+:root[data-theme="dark"] .btn.primary:hover { background: #fff; }
+:root[data-theme="dark"] .banner { background: #33261a; border-color: #6b4a2a; }
+:root[data-theme="dark"] .banner.err { background: #3a1f1c; border-color: #74362f; }
+:root[data-theme="dark"] .field input[type=text], :root[data-theme="dark"] .field input[type=password],
+:root[data-theme="dark"] .field input[type=url], :root[data-theme="dark"] .field textarea,
+:root[data-theme="dark"] .field select, :root[data-theme="dark"] #pop input, :root[data-theme="dark"] #pop select,
+:root[data-theme="dark"] input, :root[data-theme="dark"] select, :root[data-theme="dark"] textarea { background: #26282c; color: var(--ink); }
+/* status and phase chips */
+:root[data-theme="dark"] .badge.via, :root[data-theme="dark"] .st-exec, :root[data-theme="dark"] .state-ready { background: #1f2f4d; color: #a9c4f5; }
+:root[data-theme="dark"] .st-sdf { background: #17383a; color: #8fd6d6; }
+:root[data-theme="dark"] .st-init { background: #3b3018; color: #f0c870; }
+:root[data-theme="dark"] .st-comm { background: #2f2445; color: #c8b0f0; }
+:root[data-theme="dark"] .st-closed, :root[data-theme="dark"] .state-upcoming,
+:root[data-theme="dark"] .state-off, :root[data-theme="dark"] .state-untracked, :root[data-theme="dark"] .state-leave,
+:root[data-theme="dark"] .ad-chip, :root[data-theme="dark"] .ad-list .tag { background: #2c2e32; color: var(--muted); }
+:root[data-theme="dark"] .st-other, :root[data-theme="dark"] .state-complete { background: #1c3424; color: #9fd8b0; }
+:root[data-theme="dark"] .state-gaps { background: #3d1f1c; color: #f2aaa2; }
+:root[data-theme="dark"] td.phase.cur { background: #2e2a22; }
+:root[data-theme="dark"] .warn { color: #e6b450; }
+/* the week calendar */
+:root[data-theme="dark"] .cal-col.off { background-color: #1a1b1d; }
+:root[data-theme="dark"] .today, :root[data-theme="dark"] .cal-col.today { background-color: #26241b; }
+:root[data-theme="dark"] .cal-col .hour-lines {
+  background-image:
+    repeating-linear-gradient(to bottom, rgba(255, 255, 255, .16) 0 1px, transparent 1px var(--hour)),
+    repeating-linear-gradient(to bottom, transparent 0 calc(var(--hour) / 2), rgba(255, 255, 255, .07) calc(var(--hour) / 2) calc(var(--hour) / 2 + 1px), transparent calc(var(--hour) / 2 + 1px) var(--hour)),
+    repeating-linear-gradient(to bottom, transparent 0 calc(var(--hour) / 4), rgba(255, 255, 255, .035) calc(var(--hour) / 4) calc(var(--hour) / 4 + 1px), transparent calc(var(--hour) / 4 + 1px) calc(var(--hour) / 2));
+}
+:root[data-theme="dark"] .blk.missing { background: repeating-linear-gradient(135deg, #3f2220 0 6px, #4d2825 6px 12px); color: #f4b1a9; border-color: #7a3a34; }
+:root[data-theme="dark"] .lg-missing { background: repeating-linear-gradient(135deg, var(--missing) 0 3px, #5a2a26 3px 6px); }
+:root[data-theme="dark"] .blk.lunch { background: repeating-linear-gradient(135deg, #26282b 0 4px, #2c2e31 4px 8px); }
+:root[data-theme="dark"] .blk.unmatched, :root[data-theme="dark"] .lg-unmatched { background: #352d1b; color: #f0d58a; border-color: #b0821e; }
+:root[data-theme="dark"] .blk.unmatched:hover { background: #44391f; }
+:root[data-theme="dark"] .blk.diff-ev, :root[data-theme="dark"] .btn.diff-btn.on, :root[data-theme="dark"] .ad-sum.warn { background: #3a2817; color: #f5b27a; }
+:root[data-theme="dark"] .blk.diff-ev:hover { background: #4a321c; }
+:root[data-theme="dark"] .blk.dismissed { color: var(--muted); }
+:root[data-theme="dark"] .rv tr.fut td { background: #232528; }
+:root[data-theme="dark"] .diag { background: #26282b; }
+/* the small calendar and the charts */
+:root[data-theme="dark"] .mc td.wn:hover { background: #2e3034; }
+:root[data-theme="dark"] .mc td.out span { color: #6c6960; }
+:root[data-theme="dark"] .mc td.pre span { color: #5a5750; }
+:root[data-theme="dark"] .bars .hit:hover { fill: rgba(255, 255, 255, .05); }

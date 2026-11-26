@@ -4,8 +4,6 @@
 tasks in your Outlook web calendar, matches them to your Jira projects, and proposes the worklogs. You check and
 approve each one before anything is written to Jira.
 
-*Designed by Aria Behnam.* Licensed under the [Apache License 2.0](LICENSE).
-
 ---
 
 ## Contents
@@ -22,8 +20,7 @@ approve each one before anything is written to Jira.
 10. [Charts](#charts)
 11. [Privacy & safety](#privacy--safety)
 12. [Troubleshooting](#troubleshooting)
-13. [For developers](#for-developers)
-14. [License & copyright](#license--copyright)
+13. [License & copyright](#license--copyright)
 
 ---
 
@@ -54,19 +51,33 @@ Nothing else: no server, no extra account, no API key.
 
 ## Install
 
-1. **Download Timefill.** On this GitHub page, click the green **Code** button → **Download ZIP**.
-2. **Unzip it to a folder that stays where it is**, for example `Documents\Timefill`. Chrome loads Timefill from
-   this folder every time, so don't delete or move it later.
-3. **Open the extensions page.** In Chrome, type `chrome://extensions` in the address bar and press Enter.
-   (Edge: `edge://extensions`.)
-4. **Turn on Developer mode** with the switch at the top right (Edge: on the left).
-5. **Load it.** Click **Load unpacked** and choose the **`extension`** folder inside the folder you unzipped
-   (the one that contains `manifest.json`).
-6. **Pin it.** Click the puzzle-piece icon in Chrome's toolbar and the pin next to **Timefill**.
-7. **Open it.** Click the Timefill icon. Timefill opens in its own tab.
+### With the installer (Windows, recommended)
+
+1. **Download Timefill.** On this GitHub page, click the green **Code** button → **Download ZIP**, and unzip it
+   anywhere (e.g. your Downloads folder).
+2. **Run the installer.** Double-click **`Install Timefill.cmd`** in the unzipped folder. No administrator rights
+   are needed. If Windows shows "Windows protected your PC", click **More info** → **Run anyway**.
+
+   The installer copies Timefill to your user folder (`%LOCALAPPDATA%\Timefill`), sets up one-click updates, opens
+   the browser's extensions page, and copies Timefill's folder to the clipboard.
+3. **Add it to your browser (only once).** On the extensions page that opens:
+   1. turn on **Developer mode** (switch at the top right in Chrome, on the left in Edge);
+   2. click **Load unpacked**; in the folder window, paste (Ctrl+V) into the address bar at the top, press Enter,
+      then click **Select folder**.
+4. **Pin it.** Click the puzzle-piece icon in the toolbar and the pin next to **Timefill**, then click the Timefill
+   icon to open it.
 
 > Chrome may show a note about extensions in developer mode when it starts. That is normal for extensions that are
 > not installed from the Chrome Web Store; press **Keep** or close it.
+
+### Without the installer (any computer)
+
+1. Download and unzip Timefill (as above) to a folder that stays where it is, e.g. `Documents\Timefill`.
+2. Open `chrome://extensions` (Edge: `edge://extensions`) and turn on **Developer mode**.
+3. Click **Load unpacked** and choose the **`extension`** folder inside it (the one with `manifest.json`).
+4. Pin Timefill and click it.
+
+Updates are then done by hand (see [Update](#update-to-a-new-version)).
 
 ---
 
@@ -138,28 +149,32 @@ Add, remove or reorder rows to match how your team works.
 
 Use **‹ This week ›** to move between weeks, and **Both / Jira / Outlook** above the calendar to see everything,
 only what is already in Jira, or only your calendar. Press **↻ Refresh** whenever you changed something in Outlook
-or Jira yourself.
+or Jira yourself. The **☾ / ☀** button in the top-right corner switches between light and dark.
 
 ---
 
 ## Update to a new version
 
-Your settings, projects and keywords are kept when you update.
+**Installed with the installer:** Timefill tells you when a new version is out (a line at the top of Timefill),
+and **Settings → Updates** shows your version with **Check for updates**. Press **Update now**: Timefill downloads
+the new version, installs it and restarts. Your settings, projects and keywords are kept.
 
-1. Download the new version: **Code** → **Download ZIP** on this page.
-2. Unzip it and copy its contents **over your existing Timefill folder** (replace the files). Use the same folder
-   as before: Chrome keeps your settings for that folder.
-3. In `chrome://extensions`, press the **reload** icon (↻) on the Timefill card.
+**Installed without the installer:** download the new ZIP, copy its `extension` folder over your Timefill folder
+(the same folder as before, so your settings are kept), then press the reload icon (↻) on the Timefill card in
+`chrome://extensions`.
 
-The version you have is shown on the Timefill card in `chrome://extensions`; the changes of each version are in
-[CHANGELOG.md](CHANGELOG.md).
+The changes of each version are in [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
 ## Uninstall
 
-In `chrome://extensions`, press **Remove** on the Timefill card, then delete the Timefill folder. This also
-deletes everything Timefill stored in your browser. Nothing is removed from Jira or Outlook.
+1. In `chrome://extensions`, press **Remove** on the Timefill card. This also deletes everything Timefill stored
+   in your browser.
+2. Installed with the installer: double-click **`Uninstall Timefill.cmd`** (in the folder you downloaded) to remove
+   Timefill's files and its update helper. Otherwise just delete your Timefill folder.
+
+Nothing is removed from Jira or Outlook.
 
 ---
 
@@ -238,6 +253,8 @@ Each chart has a *Show as table* view.
 - **Your data stays with you.** Everything Timefill keeps (settings, projects, keywords, a copy of your calendar)
   is stored in your own browser profile and is never sent anywhere. Network requests go only to your own
   `*.atlassian.net` site, and Jira requests never follow a redirect to another address.
+- **Updates** come only from Timefill's stable release on GitHub, and only when you press **Update now**. The small
+  update helper the installer sets up does nothing else, and only Timefill can start it.
 - **No API token needed.** Timefill uses your normal Jira login in the browser. If you choose to use an API token
   instead, it is stored only in your browser profile, apart from the settings, and never shown or sent elsewhere.
 
@@ -254,47 +271,18 @@ Each chart has a *Show as table* view.
 | Some all-day events are missing | Press **↻ Refresh** with Outlook showing that week: Timefill opens Outlook's "+N more" boxes to see them. |
 | Timefill says other calendars are shown | Press **↻ Refresh**: your own calendar is read with the others unticked for a moment. If your calendar has another name, set it in Settings → **Your calendars**. |
 | Nothing works after an update | In `chrome://extensions`, press the reload icon on Timefill, then reload the Timefill tab. |
+| "Update" says the installer is needed | One-click updates need Timefill installed with `Install Timefill.cmd`. A copy installed that way is a new Timefill in the browser: set it up once (Settings, Projects), then remove the old copy in `chrome://extensions`. |
 
-### When Outlook web changes
+### Something is read wrongly
 
-Everything that reads the Outlook page is in `extension/outlook-parser.js`; the parts you may need to adjust are at
-the top of that file, in `CONFIG`.
-
-1. With your Outlook calendar open, go to Timefill → Settings → **Diagnose Outlook page**. It shows the raw text
-   Timefill sees and how it understood it. To see why one event isn't read, type its title in the box under
-   **Diagnose Outlook page** first. For a week that isn't filled as expected, press **↻ Refresh** on the Status
-   page and open the browser console (F12 → Console): the group **[Timefill] trace** shows each step with counts.
-2. Copy a few new labels into `extension-tests/parser.test.js` as test cases.
-3. Adjust `CONFIG` (or `parseLabel()`) until the tests pass: `cd extension-tests` then `node --test` (needs
-   Node.js 20 or later).
-4. Reload the extension in `chrome://extensions`.
-
----
-
-## For developers
-
-| Path | What it does |
-|---|---|
-| `extension/manifest.json` | the extension's name, version and permissions |
-| `extension/outlook-parser.js` | reads the Outlook page |
-| `extension/content.js` | runs in the Outlook tab (reading, badge) |
-| `extension/planner.js` | turns events and existing worklogs into the day plan |
-| `extension/projects.js` | builds projects and phases from Jira |
-| `extension/config.js` | phases and roles (defaults, settings) |
-| `extension/report.js` | numbers for the Charts page |
-| `extension/jira.js` | Jira REST calls |
-| `extension/backend.js` | settings, storage, Outlook connection, approval-gated posting |
-| `extension/app.html` / `app.js` / `app.css` | the Timefill pages |
-| `extension-tests/` | automated tests: `cd extension-tests && node --test` (Node.js 20 or later) |
-
-No build step and no dependencies: the `extension` folder is loaded by the browser as it is.
-See [CHANGELOG.md](CHANGELOG.md) for the history of changes.
+With your Outlook calendar open, go to Timefill → Settings → **Diagnose Outlook page**: it shows what Timefill sees
+on the page and how it understood it. To check one event, type its title in the box under the button first. Send
+that output with a description of the problem to whoever looks after Timefill for you.
 
 ---
 
 ## License & copyright
 
-Copyright © 2026 Aria Behnam. **Designed by Aria Behnam.**
+Copyright © 2026 Aria Behnam.
 
-Timefill is licensed under the [Apache License, Version 2.0](LICENSE). You may use, change and share it, also in a
-company, as long as you keep the copyright and the [NOTICE](NOTICE) file. It comes without any warranty.
+Timefill is licensed under the [Apache License, Version 2.0](LICENSE). 

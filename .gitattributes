@@ -1,0 +1,2 @@
+# the double-click installer files must keep Windows line endings (stored exactly as they are)
+*.cmd -text
