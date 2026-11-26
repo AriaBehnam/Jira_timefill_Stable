@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Timefill – Jira hours from Outlook",
+  "version": "2.0.0",
+  "author": "Aria Behnam",
+  "description": "Reads your Outlook web calendar (read-only) while Timefill is open and proposes Jira worklogs that you approve one by one.",
+  "action": {
+    "default_title": "Open Timefill"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": [
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://outlook.office.com/*",
+    "https://outlook.office365.com/*",
+    "https://outlook.cloud.microsoft/*",
+    "https://*.atlassian.net/*"
+  ],
+  "icons": {
+    "16": "icons/16.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  }
+}

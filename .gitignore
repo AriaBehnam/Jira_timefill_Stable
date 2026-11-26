@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+# holds your Jira API token and local state
+data/
+# the old Python version: kept on this computer only, never uploaded
+app/
+static/
+tests/
+requirements.txt
+run.bat
