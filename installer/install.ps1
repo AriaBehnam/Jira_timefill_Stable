@@ -13,6 +13,7 @@ param(
   [ValidateSet("", "chrome", "edge", "both")]
   [string]$Browser = "",   # which browser to open; asked when both Chrome and Edge are installed
   [switch]$SkipRegistry,   # for testing: don't register the update helper
+  [string]$RegistryBase = "Software",   # for testing: register under another key
   [switch]$NoBrowser       # for testing: don't open the browser
 )
 $ErrorActionPreference = "Stop"
@@ -65,8 +66,9 @@ $hostDef = [ordered]@{
 }
 [IO.File]::WriteAllText($hostJson, ($hostDef | ConvertTo-Json), (New-Object Text.UTF8Encoding($false)))
 if (-not $SkipRegistry) {
-  foreach ($browser in @("Software\Google\Chrome", "Software\Microsoft\Edge")) {
-    $k = "HKCU:\$browser\NativeMessagingHosts\$HostName"
+  # (not named $browser: PowerShell names ignore case, and $Browser is the browser choice of this installer)
+  foreach ($vendorKey in @("Google\Chrome", "Microsoft\Edge")) {
+    $k = "HKCU:\$RegistryBase\$vendorKey\NativeMessagingHosts\$HostName"
     New-Item -Path $k -Force | Out-Null
     Set-Item -Path $k -Value $hostJson
   }

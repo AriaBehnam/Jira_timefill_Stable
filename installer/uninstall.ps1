@@ -7,8 +7,8 @@
 # Nothing is changed in Jira or Outlook.
 param([string]$Root = (Join-Path $env:LOCALAPPDATA "Timefill"))
 $ErrorActionPreference = "Stop"
-foreach ($browser in @("Software\Google\Chrome", "Software\Microsoft\Edge")) {
-  Remove-Item -Path "HKCU:\$browser\NativeMessagingHosts\com.timefill.updater" -Force -ErrorAction SilentlyContinue
+foreach ($vendorKey in @("Google\Chrome", "Microsoft\Edge")) {
+  Remove-Item -Path "HKCU:\Software\$vendorKey\NativeMessagingHosts\com.timefill.updater" -Force -ErrorAction SilentlyContinue
 }
 if (Test-Path -LiteralPath $Root) { Remove-Item -LiteralPath $Root -Recurse -Force }
 Write-Host ""

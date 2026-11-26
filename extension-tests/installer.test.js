@@ -30,3 +30,10 @@ test("the update helper only downloads from the Timefill stable repository, over
   const urls = [...ps.matchAll(/"(https?:\/\/[^"$]+)/g)].map((m) => m[1]);
   assert.ok(urls.length >= 2 && urls.every((u) => u.startsWith("https://raw.githubusercontent.com/") || u.startsWith("https://codeload.github.com/")), urls.join(" "));
 });
+
+test("the installer never reuses the name of its browser choice for another variable (PowerShell names ignore case)", () => {
+  const ps = read("../installer/install.ps1");
+  const params = [...ps.matchAll(/\[(?:string|switch)\]\$(\w+)/g)].map((m) => m[1].toLowerCase());
+  const loops = [...ps.matchAll(/foreach\s*\(\s*\$(\w+)\s+in/gi)].map((m) => m[1].toLowerCase());
+  assert.deepEqual(loops.filter((v) => params.includes(v)), []);
+});

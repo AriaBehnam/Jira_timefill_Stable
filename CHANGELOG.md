@@ -3,6 +3,14 @@
 All notable changes to the Timefill Chrome extension (`extension/`). Timefill is designed by Aria Behnam.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions match `extension/manifest.json`.
 
+## [2.6.0] - 2026-11-27
+
+### Fixed
+- **The installer stopped at step 3** ("Impossibile convalidare la variabile … Browser" / "Cannot validate argument
+  on parameter 'Browser'"), so the update helper was not set up and **Update** said the installer was needed. A loop
+  variable had the same name as the browser choice (PowerShell names ignore upper and lower case). The installer now
+  runs through all four steps; run `Install Timefill.cmd` again to set up one-click updates (your settings are kept).
+
 ## [2.5.1] - 2026-11-27
 
 ### Added
