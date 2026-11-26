@@ -1,6 +1,6 @@
 # Timefill
 
-**Fill your Jira hours from your Outlook calendar.** Timefill is a Chrome extension. It reads the meetings and
+**Fill your Jira hours from your Outlook calendar.** Timefill is an extension for Google Chrome and Microsoft Edge. It reads the meetings and
 tasks in your Outlook web calendar, matches them to your Jira projects, and proposes the worklogs. You check and
 approve each one before anything is written to Jira.
 
@@ -26,7 +26,7 @@ approve each one before anything is written to Jira.
 
 ## What it does
 
-- **Reads your calendar.** It reads Outlook web in Chrome. It never creates, changes or deletes anything in your
+- **Reads your calendar.** It reads Outlook web in your browser. It never creates, changes or deletes anything in your
   calendar.
 - **Matches events to projects.** An event called `Big Job E design review` goes to the project *Big Job*, the
   engineering role (*E*), and the phase the project is in now.
@@ -40,7 +40,7 @@ approve each one before anything is written to Jira.
 
 ## What you need
 
-- **Google Chrome** (or Microsoft Edge) on your computer.
+- **Google Chrome** or **Microsoft Edge** on your computer (the same Timefill works in both).
 - **Outlook on the web** (`outlook.office.com`, `outlook.office365.com` or `outlook.cloud.microsoft`), signed in,
   in the same browser.
 - **Jira Cloud** (`https://<your-company>.atlassian.net`), signed in, in the same browser.
@@ -58,17 +58,18 @@ Nothing else: no server, no extra account, no API key.
 2. **Run the installer.** Double-click **`Install Timefill.cmd`** in the unzipped folder. No administrator rights
    are needed. If Windows shows "Windows protected your PC", click **More info** → **Run anyway**.
 
-   The installer copies Timefill to your user folder (`%LOCALAPPDATA%\Timefill`), sets up one-click updates, opens
-   the browser's extensions page, and copies Timefill's folder to the clipboard.
+   The installer copies Timefill to your user folder (`%LOCALAPPDATA%\Timefill`), sets up one-click updates (for
+   Chrome and Edge), opens the browser's extensions page, and copies Timefill's folder to the clipboard. If you have
+   both browsers it asks which one you use: Chrome, Edge or both.
 3. **Add it to your browser (only once).** On the extensions page that opens:
    1. turn on **Developer mode** (switch at the top right in Chrome, on the left in Edge);
    2. click **Load unpacked**; in the folder window, paste (Ctrl+V) into the address bar at the top, press Enter,
       then click **Select folder**.
-4. **Pin it.** Click the puzzle-piece icon in the toolbar and the pin next to **Timefill**, then click the Timefill
-   icon to open it.
+4. **Pin it.** Click the puzzle-piece icon in the toolbar and the pin next to **Timefill** (in Edge: the eye icon),
+   then click the Timefill icon to open it.
 
-> Chrome may show a note about extensions in developer mode when it starts. That is normal for extensions that are
-> not installed from the Chrome Web Store; press **Keep** or close it.
+> The browser may show a note about extensions in developer mode when it starts. That is normal for extensions that are
+> not installed from its web store; press **Keep** or close it.
 
 ### Without the installer (any computer)
 
@@ -85,8 +86,8 @@ Updates are then done by hand (see [Update](#update-to-a-new-version)).
 
 Open Timefill → **Settings**.
 
-1. **Jira URL:** `https://yourcompany.atlassian.net`. Keep *Sign-in* on "Use my Jira login in this Chrome" and
-   make sure you are signed in to Jira in the same Chrome. Press **Test Jira connection**.
+1. **Jira URL:** `https://yourcompany.atlassian.net`. Keep *Sign-in* on "Use my Jira login in this browser" and
+   make sure you are signed in to Jira in the same browser. Press **Test Jira connection**.
 2. **Track from:** the first day Timefill should look at. Nothing before it is read or counted as missing.
 3. **Projects query:** which Jira issues are "yours". The default is `assignee = currentUser() ORDER BY key`.
    Timefill also adds every issue you logged time on.
@@ -120,7 +121,7 @@ Add, remove or reorder rows to match how your team works.
 
 ## Everyday use
 
-1. Open your **Outlook web calendar** in Chrome, in **Week** or **Work week** view, and keep that tab open.
+1. Open your **Outlook web calendar** in the same browser, in **Week** or **Work week** view, and keep that tab open.
 2. Open Timefill → **Status**. Your week is read from Outlook and Jira. A small badge in the Outlook tab shows
    a red dot while Timefill reads and a green one when it's done, with the days it read.
 3. Check the calendar:

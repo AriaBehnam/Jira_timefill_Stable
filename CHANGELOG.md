@@ -3,6 +3,18 @@
 All notable changes to the Timefill Chrome extension (`extension/`). Timefill is designed by Aria Behnam.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions match `extension/manifest.json`.
 
+## [2.3.0] - 2026-11-26
+
+### Added
+- **Microsoft Edge.** Timefill is the same extension for Google Chrome and Microsoft Edge (checked: it loads and runs
+  in Edge, also the installed copy with its fixed identity, so one-click updates work there too). The installer
+  asks which browser you use when both are installed (Chrome, Edge or both), opens the right extensions page and
+  shows the steps for that browser.
+
+### Changed
+- Texts in Timefill and the README say "this browser" instead of "this Chrome" (e.g. "Use my Jira login in this
+  browser").
+
 ## [2.2.0] - 2026-11-26
 
 ### Added

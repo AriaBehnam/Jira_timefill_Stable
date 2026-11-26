@@ -1198,11 +1198,11 @@ async function renderSettings() {
       </fieldset>
       <fieldset><legend>Jira</legend>
         ${f("Jira URL", txt("jira_url", s.jira_url, "https://yourcompany.atlassian.net", "url"))}
-        ${f("Sign-in", `<select name="jira_auth"><option value="browser" ${s.jira_auth !== "token" ? "selected" : ""}>Use my Jira login in this Chrome (no token)</option><option value="token" ${s.jira_auth === "token" ? "selected" : ""}>E-mail + API token</option></select>`,
-            "With “my Jira login”, just be signed in to Jira in this Chrome profile. Use a token only if that doesn't work.")}
+        ${f("Sign-in", `<select name="jira_auth"><option value="browser" ${s.jira_auth !== "token" ? "selected" : ""}>Use my Jira login in this browser (no token)</option><option value="token" ${s.jira_auth === "token" ? "selected" : ""}>E-mail + API token</option></select>`,
+            "With “my Jira login”, just be signed in to Jira in this browser. Use a token only if that doesn't work.")}
         ${f("E-mail (token only)", txt("jira_email", s.jira_email, "you@company.com"))}
         ${f("API token (token only)", txt("jira_token", "", s.token_set ? "•••••••• saved — leave empty to keep" : "paste token", "password"),
-            `Create one at <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank">id.atlassian.com → Security → API tokens</a>. Stored only in this Chrome profile.`)}
+            `Create one at <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank">id.atlassian.com → Security → API tokens</a>. Stored only in this browser profile.`)}
         ${f("Projects query (JQL)", txt("project_jql", s.project_jql),
             "Issues that make a project yours. A project is the Jira epic of the issue (all its children are its phases, whoever they are assigned to), or — for issues without an epic — every issue with the same project code.")}
         ${f("Project code field", txt("studio_field", s.studio_field, "Project code"),
@@ -1214,7 +1214,7 @@ async function renderSettings() {
         ${f("", `<button type="button" class="btn" id="test-jira">Test Jira connection</button> <span id="tj" class="small muted"></span>`)}
       </fieldset>
       <fieldset><legend>Outlook web (read-only)</legend>
-        ${f("How it reads", `<div class="help" style="margin-top:5px">Open your calendar in Outlook web in this Chrome, in <b>Week</b> or <b>Work week</b> view. Timefill reads the events the page shows (never edits them) every time you move to another week, and when you open the Status page or press “↻ Refresh” there.</div>`)}
+        ${f("How it reads", `<div class="help" style="margin-top:5px">Open your calendar in Outlook web in this browser, in <b>Week</b> or <b>Work week</b> view. Timefill reads the events the page shows (never edits them) every time you move to another week, and when you open the Status page or press “↻ Refresh” there.</div>`)}
         ${f("“Open week” link", txt("outlook_week_url", s.outlook_week_url),
             "Used by “Open week in Outlook”. {yyyy} {m} {d} are replaced by the Monday of the week.")}
         ${f("Dates like 09/11/2026 mean", `<select name="numeric_date_order"><option value="dmy" ${s.numeric_date_order !== "mdy" ? "selected" : ""}>day / month / year</option><option value="mdy" ${s.numeric_date_order === "mdy" ? "selected" : ""}>month / day / year</option></select>`)}

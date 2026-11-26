@@ -252,7 +252,7 @@ export async function readOutlookTabs() {
 
 async function diagnoseOutlook(find = "") {
   const tabs = await chrome.tabs.query({ url: OUTLOOK_TABS });
-  if (!tabs.length) throw new ApiError("No Outlook tab is open. Open your Outlook calendar (week view) in Chrome first.");
+  if (!tabs.length) throw new ApiError("No Outlook tab is open. Open your Outlook calendar (week view) in this browser first.");
   const reports = [];
   for (const t of tabs) {
     try { reports.push(await askTab(t.id, { type: "timefill-diagnose", find })); }

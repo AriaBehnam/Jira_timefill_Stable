@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0 (see LICENSE and NOTICE)
 
 // Minimal Jira Cloud REST v3 client.
-// Auth "browser": uses the Jira login you already have in Chrome (cookies). No token needed.
+// Auth "browser": uses the Jira login you already have in the browser (cookies). No token needed.
 // Auth "token":   e-mail + API token (basic auth), for when the browser login doesn't work.
 
 import { addDaysIso, dateOf, localStamp } from "./planner.js";
@@ -93,7 +93,7 @@ export class JiraClient {
       } catch { /* not json */ }
       if (r.status === 401)
         detail = this.auth === "browser"
-          ? "you are not logged in to Jira in this Chrome profile - open Jira in a tab, sign in, and try again."
+          ? "you are not logged in to Jira in this browser - open Jira in a tab, sign in, and try again."
           : "authentication failed - check e-mail and API token.";
       throw new JiraError(`Jira ${method} ${path} -> ${r.status}: ${detail}`);
     }
