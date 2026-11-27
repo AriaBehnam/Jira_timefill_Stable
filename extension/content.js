@@ -16,7 +16,7 @@
   globalThis.__timefillPing = extensionAlive;
 
   const P = globalThis.TimefillParser;
-  const DEFAULTS = { numeric_date_order: "dmy", show_outlook_badge: true, expand_more_events: true, own_calendars: "Calendar, Calendario, Kalender, Calendrier" };
+  const DEFAULTS = { language: "en", numeric_date_order: "dmy", show_outlook_badge: true, expand_more_events: true, own_calendars: "Calendar, Calendario, Kalender, Calendrier" };
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const onCalendar = () => /\/calendar/i.test(location.pathname);
 
@@ -175,10 +175,26 @@
     }
   }
 
-  /** "16–22 Nov", "30 Nov – 6 Dec", "28 Dec 2026 – 3 Jan 2027" */
-  function dayRange(first, last) {
+  /* The badge speaks the language chosen in Timefill's Settings (English or Italiano). */
+  const BADGE_IT = {
+    "Go to Timefill (reads this calendar while Timefill is open, never edits it)": "Vai a Timefill (legge questo calendario mentre Timefill è aperto, senza mai modificarlo)",
+    "Timefill · reading your calendar…": "Timefill · lettura del calendario…",
+    "Timefill · open a week view": "Timefill · apri una vista settimana",
+    "your calendar was not found in the list": "il tuo calendario non è stato trovato nell'elenco",
+    "two ticked calendars have your calendar's name, so Timefill can't tell which is yours": "due calendari spuntati hanno il nome del tuo calendario, quindi Timefill non sa quale sia il tuo",
+    "Timefill reads only your calendar when you open the Status page or press ↻ Refresh": "Timefill legge solo il tuo calendario quando apri la pagina Stato o premi ↻ Aggiorna",
+    "you are typing or have a form open in Outlook; read again with ↻ Refresh": "stai scrivendo o hai un modulo aperto in Outlook; rileggi con ↻ Aggiorna",
+    "read a moment ago with only your calendar": "letto un momento fa con solo il tuo calendario",
+    "your own calendar was no longer ticked": "il tuo calendario non era più spuntato",
+  };
+  const italian = (s) => s?.language === "it";
+  const say = (text, s) => (italian(s) && BADGE_IT[text]) || text;
+
+  /** "16–22 Nov", "30 Nov – 6 Dec", "28 Dec 2026 – 3 Jan 2027" (Italian: "16–22 nov") */
+  function dayRange(first, last, s) {
     const d = (iso) => { const [y, m, dd] = iso.split("-").map(Number); return { y, m, dd }; };
-    const M = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const M = italian(s) ? ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"]
+      : ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const a = d(first), b = d(last);
     if (first === last) return `${a.dd} ${M[a.m - 1]}`;
     if (a.y !== b.y) return `${a.dd} ${M[a.m - 1]} ${a.y} – ${b.dd} ${M[b.m - 1]} ${b.y}`;
@@ -257,24 +273,33 @@
                padding:6px 12px 6px 10px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.25);opacity:.88}
         button:hover{opacity:1} i{display:inline-block;width:8px;height:8px;border-radius:50%;background:#dc2626;margin-right:6px;transition:background .2s}
         i.done{background:#22c55e} i.reading{background:#facc15;animation:blink 1s ease-in-out infinite} @keyframes blink{50%{opacity:.35}}
-      </style><button title="Go to Timefill (reads this calendar while Timefill is open, never edits it)"><i></i><span></span></button>`;
+      </style><button><i></i><span></span></button>`;
       root.querySelector("button").addEventListener("click", () => {
         try { chrome.runtime.sendMessage({ type: "open-app" }).catch(() => {}); } catch { /* extension reloaded */ }
       });
       badgeHost._label = root.querySelector("span");
+      badgeHost._button = root.querySelector("button");
       badgeHost._dot = root.querySelector("i");
       document.documentElement.appendChild(badgeHost);
     }
     // red (blinking) while reading, green when done
     const dot = badgeHost._dot;
     if (dot?.classList) { dot.classList.toggle("reading", !!res.reading); dot.classList.toggle("done", !res.reading && !res.failed && !!res.visibleDates?.length); }
-    if (res.reading) { badgeHost._label.textContent = "Timefill · reading your calendar…"; return; }
-    if (res.waiting) { badgeHost._label.textContent = `Timefill · not read now: ${res.waiting.join(", ")} also shown (${res.why})`; return; }
-    if (res.failed) { badgeHost._label.textContent = `Timefill · could not read: ${res.failed}`; return; }
+    if (badgeHost._button?.setAttribute) badgeHost._button.setAttribute("title", say("Go to Timefill (reads this calendar while Timefill is open, never edits it)", s));
+    const it = italian(s);
+    if (res.reading) { badgeHost._label.textContent = say("Timefill · reading your calendar…", s); return; }
+    if (res.waiting) {
+      badgeHost._label.textContent = it ? `Timefill · non letto ora: è mostrato anche ${res.waiting.join(", ")} (${say(res.why, s)})`
+        : `Timefill · not read now: ${res.waiting.join(", ")} also shown (${res.why})`;
+      return;
+    }
+    if (res.failed) { badgeHost._label.textContent = `Timefill · ${it ? "lettura non riuscita" : "could not read"}: ${res.failed}`; return; }
     const days = res.visibleDates || [];
-    const range = days.length ? dayRange(days[0], days[days.length - 1]) : "";
-    badgeHost._label.textContent = !days.length ? "Timefill · open a week view"
-      : `Timefill · read ${range} · ${res.events.length} events${res.hid?.length ? ` · only your calendar (${res.hid.length} other${res.hid.length > 1 ? "s" : ""} unticked for the read)` : ""}`;
+    const range = days.length ? dayRange(days[0], days[days.length - 1], s) : "";
+    const n = res.hid?.length || 0;
+    badgeHost._label.textContent = !days.length ? say("Timefill · open a week view", s)
+      : it ? `Timefill · letto ${range} · ${res.events.length} eventi${n ? ` · solo il tuo calendario (${n === 1 ? "1 altro tolto" : `${n} altri tolti`} per la lettura)` : ""}`
+      : `Timefill · read ${range} · ${res.events.length} events${n ? ` · only your calendar (${n} other${n > 1 ? "s" : ""} unticked for the read)` : ""}`;
   }
 
   /* --- watching the page: only while at least one Timefill page is connected --- */

@@ -3,6 +3,10 @@
 // SPDX-License-Identifier: Apache-2.0 (see LICENSE and NOTICE)
 
 import { handle, watchOutlookTabs } from "./backend.js";
+import { tr, trh, startTranslating, setLanguage, getLanguage, dateLocale, LANGUAGES } from "./i18n.js";
+
+// English or Italiano (Settings → Language): every text that appears on the page is translated as it appears.
+startTranslating();
 
 const view = document.getElementById("view");
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -93,7 +97,7 @@ async function renderProjects(autoRefresh = true) {
     .filter((p) => projFilter === "all" || (projFilter === "open" ? p.status !== "closed" : projFilter === "worked" ? p.worked_on : p.status === projFilter))
     .sort((a, b) => (a.status === "closed") - (b.status === "closed") || (b.is_new - a.is_new) || a.name.localeCompare(b.name));
   const browse = (k) => esc(`${data.jira_url}/browse/${encodeURIComponent(k)}`);
-  const since = data.track_from ? `since ${new Date(data.track_from + "T00:00").toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}` : "all time";
+  const since = data.track_from ? `since ${new Date(data.track_from + "T00:00").toLocaleDateString(dateLocale(), { day: "numeric", month: "short", year: "numeric" })}` : "all time";
   const rep = data.last_report;
   const closedWorked = all.filter((p) => p.worked_on && p.status === "closed").length;
   const reportHtml = !rep ? "" : `
@@ -125,7 +129,7 @@ async function renderProjects(autoRefresh = true) {
   const row = (p) => `
     <tr class="${p.status === "closed" ? "closed" : ""}">
       <td class="pname">
-        <div class="nm">${esc(p.name)}${p.is_new ? `<span class="badge">NEW</span>` : ""}${p.via === "worked" ? `<span class="badge via" title="${VIA_TEXT.worked}">WORKED ON</span>` : ""}${p.pinned ? `<span class="badge via" title="added by you with “Find a project”">ADDED</span> <button class="btn tiny" data-unpin="${esc(p.id)}" title="remove from my list">Remove</button>` : ""}</div>
+        <div class="nm"><span data-notr>${esc(p.name)}</span>${p.is_new ? `<span class="badge">NEW</span>` : ""}${p.via === "worked" ? `<span class="badge via" title="${VIA_TEXT.worked}">WORKED ON</span>` : ""}${p.pinned ? `<span class="badge via" title="added by you with “Find a project”">ADDED</span> <button class="btn tiny" data-unpin="${esc(p.id)}" title="remove from my list">Remove</button>` : ""}</div>
         <div class="small muted">${projectRef(p)}</div>
         ${typeSelect(p)}
       </td>
@@ -161,7 +165,7 @@ async function renderProjects(autoRefresh = true) {
           .map(([k, l]) => `<button class="chip ${projFilter === k ? "on" : ""}" data-filter="${esc(k)}">${esc(l)}</button>`).join("")}
       </div>
       <span class="grow"></span>
-      <span class="small muted">Calendar title = keyword + <b>E</b> (engineering/SD) or <b>M</b> (management) — e.g. “Alpha E layout review”. A keyword with several words (“echo plc”) needs all of them in the title; commas separate keywords.</span>
+      <span class="small muted">${trh("help.keywords", `Calendar title = keyword + <b>E</b> (engineering/SD) or <b>M</b> (management) — e.g. “Alpha E layout review”. A keyword with several words (“echo plc”) needs all of them in the title; commas separate keywords.`)}</span>
     </div>
     <div class="card">
       <table class="projects">
@@ -192,7 +196,7 @@ function internalSection(list, browse) {
         <tbody>${list.map((p) => p.phases.map((i, n) => `
           <tr class="${i.done ? "closed" : ""} ${n ? "cont" : ""}">
             ${n ? "" : `<td class="pname" rowspan="${p.phases.length}">
-              <div class="nm">${esc(p.name)}${p.is_new ? `<span class="badge">NEW</span>` : ""}</div>
+              <div class="nm"><span data-notr>${esc(p.name)}</span>${p.is_new ? `<span class="badge">NEW</span>` : ""}</div>
               <div class="small muted">${p.epic ? `epic <a href="${browse(p.epic.key)}" target="_blank">${esc(p.epic.key)}</a> · ` : ""}${hrs(p.total_minutes)}</div>
               ${typeSelect(p)}</td>`}
             <td colspan="2"><span class="it">${esc(i.label && i.label !== "main" ? i.label : i.summary)}</span> <a class="ik" href="${browse(i.key)}" target="_blank">${esc(i.key)}</a>
@@ -218,7 +222,7 @@ async function findInJira() {
     const res = await api(`/api/jira/find?q=${encodeURIComponent(q)}`);
     const jiraUrl = (await api("/api/settings")).jira_url.replace(/\/+$/, "");
     box.innerHTML = res.length ? `<table class="find-res">${res.map((r) => `
-      <tr><td><b>${esc(r.name)}</b></td>
+      <tr><td><b data-notr>${esc(r.name)}</b></td>
         <td class="small muted">${r.kind === "epic" ? "epic" : "issue"} <a class="ik" href="${esc(`${jiraUrl}/browse/${encodeURIComponent(r.key)}`)}" target="_blank">${esc(r.key)}</a></td>
         <td class="small muted">${esc(r.status)}</td>
         <td class="num">${r.in_list ? `<span class="small muted">in your list</span>` : `<button class="btn tiny primary" data-pin="${esc(r.key)}">Add to my list</button>`}</td></tr>`).join("")}</table>`
@@ -307,7 +311,7 @@ function weekGrid(plan) {
   const stateText = { complete: "complete", ready: "ready to fill", gaps: "missing hours", upcoming: "upcoming", off: "day off", untracked: "not tracked", leave: "on leave" };
   const head = days.map((d) => safe(d, "header", () => {
     const dt = new Date(d.date + "T00:00");
-    const label = dt.toLocaleDateString(undefined, { weekday: "short", day: "numeric" });
+    const label = dt.toLocaleDateString(dateLocale(), { weekday: "short", day: "numeric" });
     const postable = d.entries.filter((e) => !e.future).length;
     return `
       <div class="cal-dh ${d.date === today ? "today" : ""}">
@@ -474,7 +478,7 @@ async function renderStatus(fresh = false) {
   pop.style.display = "none";
   delete pop.dataset.mode;
   const to = addDays(weekStart, 4);
-  const rangeLabel = `${weekStart.toLocaleDateString(undefined, { day: "numeric", month: "short" })} – ${to.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}`;
+  const rangeLabel = `${weekStart.toLocaleDateString(dateLocale(), { day: "numeric", month: "short" })} – ${to.toLocaleDateString(dateLocale(), { day: "numeric", month: "short", year: "numeric" })}`;
   const scrollY = window.scrollY || 0;
   const calScroll = document.getElementById("cal-scroll")?.scrollTop ?? null;
   const sameWeek = lastPlan && lastPlan.from === iso(weekStart) && document.getElementById("status-body");
@@ -510,6 +514,17 @@ async function renderStatus(fresh = false) {
   }
 }
 
+/* How to use each kind of block: the ⓘ next to its name in the legend (hover it). */
+const HELP = {
+  missing: "Missing: expected working time with no event and nothing in Jira, from one event to the next. Click a missing block to assign all of it, or drag over it to assign only part of it (15-minute steps). Faded blocks are later than now.",
+  planned: "To fill (blue): from your calendar, waiting for your approval. Click to change the issue or time (or “Don't fill”), drag to move, drag the top or bottom edge to change the length; × undoes your change. Events at the same time are shown side by side, each in full: drag or resize them to split the time. Nothing is written to Jira until you approve it in “Review & approve” (or press “Send to Jira” in its box).",
+  logged: "Already in Jira (green): drag a block to another time or day, or drag its top or bottom edge to change its length (15-minute steps; hold Alt for 5). Timefill asks before it changes the worklog in Jira.",
+  unmatched: "Not matched: a calendar event without a project keyword in its title (or without a matching phase). Click it to choose the project and phase.",
+  diff: "Orange: Jira and your calendar don't match (a worklog with no event at that time, or an event of your projects that isn't in Jira). Click it to see both sides and ignore it, or use the “not like calendar” button for the whole week.",
+  dismissed: "Grey: events you chose not to fill (↺ brings them back) and meetings you declined or that were cancelled. Click a declined or cancelled one to fill it anyway.",
+};
+const info = (text) => `<span class="info" tabindex="0" role="img" aria-label="${esc(text)}" data-tip="${esc(text)}">i</span>`;
+
 function drawStatus(plan, fresh, sameWeek, scrollY, calScroll = null) {
   lastPlan = plan;
   learnTitles(plan.titles);
@@ -533,23 +548,19 @@ function drawStatus(plan, fresh, sameWeek, scrollY, calScroll = null) {
         <span>expected <b>${hrs(t.target)}</b></span>
         <span style="color:var(--logged)">already logged <b>${hrs(t.logged)}</b></span>
         <span style="color:var(--planned)">to fill <b>${hrs(t.planned)}</b></span>
-        <span style="color:var(--missing)">missing so far <b>${hrs(t.missing_past)}</b></span>
-        <span class="muted">${plan.event_count} calendar events · ${plan.outlook_tabs ? `${plan.outlook_tabs} Outlook tab open` : "no Outlook tab open"}${plan.jira_read_at ? ` · Jira read ${esc(new Date(plan.jira_read_at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }))}` : ""}</span>
+        <span style="color:var(--missing)">missing <b>${hrs(t.missing_past)}</b></span>
+        <span class="muted">${plan.event_count} calendar events · ${plan.outlook_tabs ? `${plan.outlook_tabs} Outlook tab open` : "no Outlook tab open"}${plan.jira_read_at ? ` · Jira read ${esc(new Date(plan.jira_read_at).toLocaleTimeString(dateLocale(), { hour: "2-digit", minute: "2-digit" }))}` : ""}</span>
       </div>
       <span class="grow"></span>
       <div class="seg" role="group" aria-label="show">${[["both", "Both"], ["jira", "Jira"], ["outlook", "Outlook"]].map(([k, l]) =>
         `<button class="chip ${calView === k ? "on" : ""}" data-calview="${k}" title="${k === "both" ? "Jira worklogs and your calendar" : k === "jira" ? "only what is already in Jira (and missing time)" : "only your calendar: blocks to fill, vacation, events without a project"}">${l}</button>`).join("")}</div>
       <div class="legend">
-        <span><i style="background:var(--logged)"></i>already logged</span><span><i style="background:var(--planned)"></i>to fill</span>
-        <span><i style="background:var(--vacation)"></i>vacation</span><span><i class="lg-missing"></i>missing</span>
-        <span><i class="lg-unmatched"></i>not matched</span><span><i class="lg-diff"></i>Jira ≠ calendar</span><span><i class="lg-dismissed"></i>not filled / declined</span>
+        <span><i style="background:var(--logged)"></i>already logged${info(HELP.logged)}</span><span><i style="background:var(--planned)"></i>to fill${info(HELP.planned)}</span>
+        <span><i style="background:var(--vacation)"></i>vacation</span><span><i class="lg-missing"></i>missing${info(HELP.missing)}</span>
+        <span><i class="lg-unmatched"></i>not matched${info(HELP.unmatched)}</span><span><i class="lg-diff"></i>Jira ≠ calendar${info(HELP.diff)}</span><span><i class="lg-dismissed"></i>not filled / declined${info(HELP.dismissed)}</span>
       </div>
     </div>
-    ${weekGrid(plan)}
-    <p class="small muted">Click a <b>missing</b> or <b>not matched</b> block to assign it; <b>drag over a missing block</b> to assign only part of it (15-minute steps). Nothing is written to Jira until you approve each worklog in “Review &amp; approve”. Faded blocks are later than now.<br>
-      Blue <b>to fill</b> blocks: click to change the issue or time (or “Don't fill”), drag to move them, drag the top or bottom edge to change the length. × undoes your change.<br>
-      Drag a green <b>in Jira</b> block to another time or day, or drag its top or bottom edge to change its length (15-minute steps; hold Alt for 5). Timefill asks before it changes the worklog in Jira.<br>
-      <b style="color:#c2620c">Orange</b>: Jira and your calendar don't match (a worklog with no event at that time, or an event of your projects that isn't in Jira). Click it to see both sides and ignore it, or use the “not like calendar” button for the whole week. Events at the same time are shown side by side, each in full: drag or resize them to split the time.</p>`;
+    ${weekGrid(plan)}`;
   if (!fresh && sameWeek) { // a local redraw keeps your place
     window.scrollTo(0, scrollY);
     const box = document.getElementById("cal-scroll");
@@ -673,7 +684,7 @@ async function openAllDayPop(date, target) {
     ${list.length ? `<table class="ad-list"><thead><tr><th></th><th>Event</th><th>Project – phase</th><th>Hours</th></tr></thead><tbody>
       ${list.map((x) => `<tr data-ad-key="${esc(x.key)}" class="${x.on ? "" : "off"}">
         <td><input type="checkbox" data-ad-on ${x.on ? "checked" : ""} ${x.edited || x.posted ? "disabled" : ""} title="fill this event"></td>
-        <td><b>${esc(x.subject)}</b> <span class="tag tag-${esc(x.show_as)}">${esc(x.show_as)}</span>${!x.issue && x.reason ? `<div class="small muted">${esc(x.reason)}</div>` : ""}</td>
+        <td><b data-notr>${esc(x.subject)}</b> <span class="tag tag-${esc(x.show_as)}">${esc(x.show_as)}</span>${!x.issue && x.reason ? `<div class="small muted">${esc(x.reason)}</div>` : ""}</td>
         <td>${x.edited || x.posted ? `<span class="small">${x.posted ? "in Jira" : `changed on the calendar · ${hrs(x.edited_minutes)}`}</span>
           ${x.edited ? `<button class="btn tiny" data-ad-undo="${esc(x.override_ids.join(","))}" title="your changes to its block are removed; it gets its share again">back to automatic</button>` : ""}`
           : `<select data-ad-issue>${options(x.issue)}</select>`}</td>
@@ -710,7 +721,7 @@ function openPop(target, given = null) {
   const pop = document.getElementById("pop");
   pop.innerHTML = `
     <div class="small muted">${esc(dayLabel(info.date))}</div>
-    ${info.label ? `<div class="pop-title">${esc(info.label)}</div>` : `<div class="pop-title">Missing time</div>`}
+    ${info.label ? `<div class="pop-title" data-notr>${esc(info.label)}</div>` : `<div class="pop-title">Missing time</div>`}
     <div id="pk"></div>
     <div class="pl-times"><label class="small muted">from <input type="time" id="as-start" step="900" value="${esc(info.start)}"></label>
       <label class="small muted">to <input type="time" id="as-end" step="900" value="${esc(info.end)}"></label>
@@ -819,7 +830,7 @@ window.addEventListener("pointerup", () => {
 let drag = null;
 let justDragged = false;
 const snapTo = (m, step) => Math.round(m / step) * step;
-const dayLabel = (date) => new Date(date + "T00:00").toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+const dayLabel = (date) => new Date(date + "T00:00").toLocaleDateString(dateLocale(), { weekday: "short", day: "numeric", month: "short" });
 
 view.addEventListener("pointerdown", (ev) => {
   const el = ev.target.closest(".blk.movable[data-wl], .blk.editable[data-pl]");
@@ -952,7 +963,7 @@ function openPlanPop(target) {
   const pop = document.getElementById("pop");
   pop.innerHTML = `
     <div class="small muted">${esc(dayLabel(pl.date))} · to fill${pl.source === "manual" ? " · changed by you" : pl.source === "all_day" ? " · all-day event (hours of the day: click it in the all-day row)" : " · from your calendar"}</div>
-    ${pl.label ? `<div class="pop-title">${esc(pl.label)}</div>` : ""}
+    ${pl.label ? `<div class="pop-title" data-notr>${esc(pl.label)}</div>` : ""}
     <div id="pk"></div>
     <div class="pl-times"><label class="small muted">from <input type="time" id="pl-start" step="300" value="${fmtHM(pl.start)}"></label>
       <label class="small muted">to <input type="time" id="pl-end" step="300" value="${fmtHM(pl.end)}"></label></div>
@@ -1050,11 +1061,11 @@ function openReview(onlyDate) {
           <tbody>${rows.map(({ d, e }) => `
             <tr data-id="${esc(e.id)}" class="${e.future ? "fut" : ""}">
               <td><input type="checkbox" class="rv-ok ${e.future ? "fut" : ""}" value="${esc(e.id)}"></td>
-              <td class="nowrap">${esc(new Date(d.date + "T00:00").toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }))}</td>
+              <td class="nowrap">${esc(new Date(d.date + "T00:00").toLocaleDateString(dateLocale(), { weekday: "short", day: "numeric", month: "short" }))}</td>
               <td class="mono nowrap">${e.start_hm}–${e.end_hm}</td>
               <td class="mono">${hrs(e.minutes)}</td>
-              <td><b>${esc(issueTitle(e.issue))}</b><div class="ik">${esc(e.issue)}</div></td>
-              <td class="small">${e.comment ? esc(e.comment) : `<span class="muted">(none)</span>`}</td>
+              <td><b data-notr>${esc(issueTitle(e.issue))}</b><div class="ik">${esc(e.issue)}</div></td>
+              <td class="small">${e.comment ? `<span data-notr>${esc(e.comment)}</span>` : `<span class="muted">(none)</span>`}</td>
               <td class="small">${esc(e.source)}${e.future ? `<div class="warn">not happened yet</div>` : ""}</td>
               <td class="rv-res small"></td>
             </tr>`).join("")}</tbody>
@@ -1235,6 +1246,10 @@ async function renderSettings() {
   view.innerHTML = `
     <div class="bar-row"><h1>Settings</h1><span class="grow"></span><button class="btn primary" id="save">Save</button></div>
     <form class="settings" id="sform" autocomplete="off">
+      <fieldset><legend data-notr>Language · Lingua</legend>
+        ${f("Show Timefill in", `<select name="language" data-notr>${Object.entries(LANGUAGES).map(([k, l]) => `<option value="${k}" ${(s.language || "en") === k ? "selected" : ""}>${l}</option>`).join("")}</select>`,
+            "The language of Timefill's pages and of its badge in Outlook.")}
+      </fieldset>
       <fieldset><legend>Updates</legend>
         ${f("Timefill version", `<b>${esc(chrome.runtime.getManifest().version)}</b>
           <button type="button" class="btn" id="upd-check" style="margin-left:10px">Check for updates</button>
@@ -1247,7 +1262,7 @@ async function renderSettings() {
             "Recommended: e-mail + API token. It keeps working when your Jira login in the browser expires (it is stored only in this browser, apart from the other settings). “My Jira login” needs no setup, but you must stay signed in to Jira in this browser.")}
         ${f("E-mail (token only)", txt("jira_email", s.jira_email, "you@company.com"))}
         ${f("API token (token only)", txt("jira_token", "", s.token_set ? "•••••••• saved — leave empty to keep" : "paste token", "password"),
-            `Create one at <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank">id.atlassian.com → Security → API tokens</a>. Stored only in this browser profile.`)}
+            trh("help.token", `Create one at <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank">id.atlassian.com → Security → API tokens</a>. Stored only in this browser profile.`))}
         ${f("Projects query (JQL)", txt("project_jql", s.project_jql),
             "Issues that make a project yours. A project is the Jira epic of the issue (all its children are its phases, whoever they are assigned to), or — for issues without an epic — every issue with the same project code.")}
         ${f("Project code field", txt("studio_field", s.studio_field, "Project code"),
@@ -1259,7 +1274,7 @@ async function renderSettings() {
         ${f("", `<button type="button" class="btn" id="test-jira">Test Jira connection</button> <span id="tj" class="small muted"></span>`)}
       </fieldset>
       <fieldset><legend>Outlook web (read-only)</legend>
-        ${f("How it reads", `<div class="help" style="margin-top:5px">Open your calendar in Outlook web in this browser, in <b>Week</b> or <b>Work week</b> view. Timefill reads the events the page shows (never edits them) every time you move to another week, and when you open the Status page or press “↻ Refresh” there.</div>`)}
+        ${f("How it reads", trh("help.reads", `<div class="help" style="margin-top:5px">Open your calendar in Outlook web in this browser, in <b>Week</b> or <b>Work week</b> view. Timefill reads the events the page shows (never edits them) every time you move to another week, and when you open the Status page or press “↻ Refresh” there.</div>`))}
         ${f("“Open week” link", txt("outlook_week_url", s.outlook_week_url),
             "Used by “Open week in Outlook”. {yyyy} {m} {d} are replaced by the Monday of the week.")}
         ${f("Dates like 09/11/2026 mean", `<select name="numeric_date_order"><option value="dmy" ${s.numeric_date_order !== "mdy" ? "selected" : ""}>day / month / year</option><option value="mdy" ${s.numeric_date_order === "mdy" ? "selected" : ""}>month / day / year</option></select>`)}
@@ -1268,7 +1283,7 @@ async function renderSettings() {
         ${f("Badge in Outlook", `<label><input type="checkbox" name="show_outlook_badge" ${s.show_outlook_badge ? "checked" : ""}> show a small “Timefill” button in the Outlook tab (opens this page)</label>`)}
         ${f("", `<button type="button" class="btn" id="test-cal">Read Outlook now</button> <button type="button" class="btn" id="diagnose">Diagnose Outlook page</button> <span id="tc" class="small muted"></span>
             <div style="margin-top:6px"><input id="diag-find" placeholder="look for an event title, e.g. Big Job demo" style="max-width:280px"></div>`,
-            "If events stop being recognised after a Microsoft update, the diagnose output shows the raw text Timefill sees — adjust <span class=\"mono\">outlook-parser.js</span> to match. Type an event title to see exactly how Outlook writes it on the page and why it is (not) read.")}
+            trh("help.diagnose", "If events stop being recognised after a Microsoft update, the diagnose output shows the raw text Timefill sees — adjust <span class=\"mono\">outlook-parser.js</span> to match. Type an event title to see exactly how Outlook writes it on the page and why it is (not) read."))}
         <pre id="diag" class="diag" hidden></pre>
       </fieldset>
       <fieldset><legend>Working time</legend>
@@ -1283,9 +1298,9 @@ async function renderSettings() {
         ${f("Round events to", `<select name="rounding_minutes">${[1, 5, 15, 30].map((m) => `<option value="${m}" ${+s.rounding_minutes === m ? "selected" : ""}>${m === 1 ? "no rounding" : m + " min"}</option>`).join("")}</select>`)}
       </fieldset>
       <fieldset><legend>Phases &amp; roles</legend>
-        <div class="help" style="margin-bottom:8px">Your Jira issue summaries end with a <b>phase</b> and a <b>role</b>, e.g. “26.001.P01 Big Job · <b>EXEC</b> · <b>SD</b>”.
+        ${trh("help.phases", `<div class="help" style="margin-bottom:8px">Your Jira issue summaries end with a <b>phase</b> and a <b>role</b>, e.g. “26.001.P01 Big Job · <b>EXEC</b> · <b>SD</b>”.
           Tell Timefill how they are written in Jira, what to call them, and which words in a calendar event title choose them
-          (stand-alone words, any case: “Big Job <b>E</b> <b>installation</b> check”).</div>
+          (stand-alone words, any case: “Big Job <b>E</b> <b>installation</b> check”).</div>`)}
         <h3 class="cfg-h">Roles</h3>
         <table class="cfg" id="cfg-roles"><thead><tr><th>In Jira</th><th>Shown as</th><th>Words in the event title</th><th title="used when the title has none of the role words">Default</th><th></th></tr></thead>
           <tbody>${(s.roles || []).map((r) => roleRow(r, r.token === s.default_role)).join("")}</tbody></table>
@@ -1460,7 +1475,12 @@ document.addEventListener("click", async (ev) => {
     return renderStatus();
   }
   if (t.id === "save") {
-    try { await api("/api/settings", { method: "POST", body: collectSettings() }); toast("Settings saved"); renderSettings(); }
+    try {
+      const o = collectSettings();
+      await api("/api/settings", { method: "POST", body: o });
+      if (setLanguage(o.language)) return location.reload(); // the whole page in the new language
+      toast("Settings saved"); renderSettings();
+    }
     catch (e) { toast(e.message, true); }
     return;
   }
@@ -1524,7 +1544,7 @@ view.addEventListener("change", (ev) => {
 const PROJECT_SLOTS = [1, 2, 3, 4, 6, 7];
 const projectColor = (i) => (i >= 0 && i < PROJECT_SLOTS.length ? `var(--c${PROJECT_SLOTS[i]})` : "var(--c-other)");
 const CAT_COLOR = { presale: "var(--c1)", project: "var(--c2)", install: "var(--c3)", general: "var(--c4)", vacation: "var(--c5)", internal: "var(--c7)", training: "var(--c6)" };
-let chartGran = { placed: "week", types: "week" };
+let chartGran = { placed: "week", types: "week", top: "sel" }; // top: "sel" = the selected period, "all" = since Track from
 let chartSel = null;      // what the calendar selected: { mode: "week" | "month", key } (week key = its Monday)
 let calMonth = null; // month shown in the small calendar, "YYYY-MM"
 let lastReport = null;
@@ -1537,8 +1557,10 @@ const isoWeekNo = (s) => {
   return 1 + Math.round(((t - w1) / 864e5 - 3 + ((w1.getDay() + 6) % 7)) / 7);
 };
 const addMonths = (ym, n) => { const d = new Date(+ym.slice(0, 4), +ym.slice(5) - 1 + n, 1); return iso(d).slice(0, 7); };
-const monthName = (ym) => new Date(+ym.slice(0, 4), +ym.slice(5) - 1, 1).toLocaleDateString(undefined, { month: "long", year: "numeric" });
-const shortDay = (s) => dOf(s).toLocaleDateString(undefined, { day: "numeric", month: "short" });
+const monthName = (ym) => new Date(+ym.slice(0, 4), +ym.slice(5) - 1, 1).toLocaleDateString(dateLocale(), { month: "long", year: "numeric" });
+/** Monday … Sunday as one letter, in the page's language (M T W T F S S, L M M G V S D). */
+const weekdayLetters = () => [0, 1, 2, 3, 4, 5, 6].map((i) => new Date(2026, 10, 2 + i).toLocaleDateString(dateLocale(), { weekday: "narrow" }).toUpperCase());
+const shortDay = (s) => dOf(s).toLocaleDateString(dateLocale(), { day: "numeric", month: "short" });
 
 let chartsRead = false; // the Charts page has read Jira since Timefill was opened
 async function renderCharts(fresh = false) {
@@ -1577,7 +1599,7 @@ const granToggle = (chart) => `<div class="seg" role="group" aria-label="period"
   `<button class="chip ${chartGran[chart] === g ? "on" : ""}" data-chart="${chart}" data-gran="${g}">${g === "week" ? "Week" : "Month"}</button>`).join("")}</div>`;
 const periodsOf = (gran) => (gran === "week" ? lastReport.weeks : lastReport.months);
 const tableView = (head, rows) => `<details class="tview"><summary>Show as table</summary><table><thead><tr>${head.map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead>
-  <tbody>${rows.map((r) => `<tr>${r.map((c, i) => `<td class="${i ? "num" : ""}">${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></details>`;
+  <tbody>${rows.map((r) => `<tr>${r.map((c, i) => `<td class="${i ? "num" : ""}" data-notr>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></details>`;
 
 /** The selected week or month as a report period (an empty one if it has no data, e.g. before "Track from"). */
 function selectedPeriod() {
@@ -1589,15 +1611,15 @@ function selectedPeriod() {
   return { key: chartSel.key, from, to, target: 0, logged: 0, missing: 0, byCategory: {}, byProject: {} };
 }
 const selectedTitle = (p) => (chartSel.mode === "week" ? `Week ${isoWeekNo(p.from)} · ${shortDay(p.from)} – ${shortDay(p.to)}`
-  : chartSel.mode === "day" ? dOf(chartSel.key).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long", year: "numeric" })
+  : chartSel.mode === "day" ? dOf(chartSel.key).toLocaleDateString(dateLocale(), { weekday: "long", day: "numeric", month: "long", year: "numeric" })
   : monthName(chartSel.key));
 const weekOfDay = (date) => iso(mondayOf(dOf(date)));
 
 function drawCharts() {
   const r = lastReport;
   if (!r || currentView() !== "charts") return;
-  const since = dOf(r.from).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
-  const read = r.jira_read_at ? new Date(r.jira_read_at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }) : "";
+  const since = dOf(r.from).toLocaleDateString(dateLocale(), { day: "numeric", month: "short", year: "numeric" });
+  const read = r.jira_read_at ? new Date(r.jira_read_at).toLocaleTimeString(dateLocale(), { hour: "2-digit", minute: "2-digit" }) : "";
   const guess = Math.max(420, Math.floor(((view.clientWidth || 1400) - 16) / 2) - 34); // first draw; then measured
   view.innerHTML = `
     <div class="bar-row"><h1>Charts</h1><span class="muted">your hours in Jira since ${esc(since)}${read ? ` · Jira read ${esc(read)}` : ""}</span>
@@ -1607,6 +1629,7 @@ function drawCharts() {
       <section class="card chart">${pieCard(r)}</section>
       <section class="card chart">${placedCard(r, guess)}</section>
       <section class="card chart">${typesCard(r, guess)}</section>
+      <section class="card chart wide">${topCard(r)}</section>
     </div>`;
   mountBars();
 }
@@ -1617,7 +1640,7 @@ function mountBars() {
     const w = host.clientWidth;
     if (!w) continue;
     const chart = host.dataset.bars;
-    host.innerHTML = chart === "placed" ? placedBars(w) : typesBars(w);
+    host.innerHTML = chart === "placed" ? placedBars(w) : chart === "top" ? topBars(w) : typesBars(w);
   }
 }
 let resizeTimer;
@@ -1652,7 +1675,7 @@ function calendarCard(r) {
         <button class="mc-title ${monthSel ? "on" : ""}" data-sel-month="${calMonth}" title="select the whole month">${esc(monthName(calMonth))}</button>
         <button class="btn tiny" data-cal-step="1" aria-label="next month">›</button>
       </div>
-      <table class="mc"><thead><tr><th class="wn">Wk</th>${["M", "T", "W", "T", "F", "S", "S"].map((x) => `<th>${x}</th>`).join("")}</tr></thead>
+      <table class="mc"><thead><tr><th class="wn">Wk</th>${weekdayLetters().map((x) => `<th>${esc(x)}</th>`).join("")}</tr></thead>
         <tbody>${rows.map((mon) => {
           const on = chartSel.mode === "week" && chartSel.key === mon;
           return `<tr class="wk ${on ? "on" : ""}">
@@ -1674,7 +1697,7 @@ function calendarCard(r) {
         <div><dt>Expected</dt><dd>${esc(hrs(p.target))}</dd></div>
       </dl>
       <div class="mc-legend small muted"><span><i class="dot full"></i>all hours in Jira</span><span><i class="dot part"></i>partly</span><span><i class="dot miss"></i>nothing in Jira</span></div>
-      <p class="small muted how">Click a <b>week number</b> for that week, a <b>day</b> for that day only, or the <b>month name</b> for the whole month. The charts follow your choice.</p>
+      <p class="small muted how">${trh("help.minical", `Click a <b>week number</b> for that week, a <b>day</b> for that day only, or the <b>month name</b> for the whole month. The charts follow your choice.`)}</p>
     </div>
     </div>`;
 }
@@ -1694,17 +1717,17 @@ function pieCard(r) {
   const free = PROJECT_SLOTS.filter((sl) => !used.has(sl));
   for (const [name, m] of extra) { const sl = free.shift(); if (sl) slices.push({ name, m, color: `var(--c${sl})` }); else other += m; }
   slices.sort((a, b) => b.m - a.m);
-  if (other) slices.push({ name: "Other projects", m: other, color: "var(--c-other)" });
+  if (other) slices.push({ name: tr("Other projects"), m: other, color: "var(--c-other)" });
   const vac = p.byCategory.vacation || 0;
-  if (vac) slices.push({ name: "Vacation / absence", m: vac, color: CAT_COLOR.vacation });
+  if (vac) slices.push({ name: tr("Vacation / absence"), m: vac, color: CAT_COLOR.vacation });
   const total = slices.reduce((a, s) => a + s.m, 0);
   const R = 78, W = 30, C = 100;
   let a0 = -Math.PI / 2;
   const arcs = slices.map((s) => {
     const sweep = (s.m / total) * Math.PI * 2, gap = slices.length > 1 ? Math.min(0.03, sweep / 3) : 0, a1 = a0 + sweep;
     const tip = esc(`${s.name}\n${hrs(s.m)} · ${Math.round((s.m / total) * 100)}%`);
-    const mark = slices.length === 1 ? `<circle cx="${C}" cy="${C}" r="${R}" fill="none" stroke="${s.color}" stroke-width="${W}" data-tip="${tip}"/>`
-      : `<path d="${arc(C, C, R, a0 + gap / 2, a1 - gap / 2)}" fill="none" stroke="${s.color}" stroke-width="${W}" data-tip="${tip}"/>`;
+    const mark = slices.length === 1 ? `<circle cx="${C}" cy="${C}" r="${R}" fill="none" stroke="${s.color}" stroke-width="${W}" data-tip="${tip}" data-notr/>`
+      : `<path d="${arc(C, C, R, a0 + gap / 2, a1 - gap / 2)}" fill="none" stroke="${s.color}" stroke-width="${W}" data-tip="${tip}" data-notr/>`;
     a0 = a1;
     return mark;
   }).join("");
@@ -1719,7 +1742,7 @@ function pieCard(r) {
         <text x="100" y="96" text-anchor="middle" class="donut-total">${esc(hrs(total))}</text>
         <text x="100" y="116" text-anchor="middle" class="donut-sub">in Jira</text>
       </svg>
-      <ul class="pie-list">${slices.map((s) => `<li data-tip="${esc(`${s.name}\n${hrs(s.m)}`)}"><i style="background:${s.color}"></i><span class="nm">${esc(s.name)}</span>
+      <ul class="pie-list">${slices.map((s) => `<li data-tip="${esc(`${s.name}\n${hrs(s.m)}`)}" data-notr><i style="background:${s.color}"></i><span class="nm">${esc(s.name)}</span>
         <b>${esc(hrs(s.m))}</b><span class="muted">${Math.round((s.m / total) * 100)}%</span></li>`).join("")}</ul>
     </div>` : `<p class="muted empty">No hours in Jira for this ${chartSel.mode}.</p>`}
     ${total ? tableView(["Project", "Hours", "Share"], slices.map((s) => [s.name, hrs(s.m), `${Math.round((s.m / total) * 100)}%`])) : ""}`;
@@ -1763,6 +1786,49 @@ function typesCard(r, w) {
       periods.map((p) => [p.label, ...series.map((s) => hrs(s.value(p))), hrs(series.reduce((a, s) => a + s.value(p), 0))]))}`;
 }
 
+/* 4. the projects you spent the most time on: one bar each (most hours first), stacked by phase (vacation not counted) */
+const TOP_BARS = 20;
+function topData(r) {
+  const all = chartGran.top === "all";
+  const sum = Object.create(null); // project -> phase -> minutes
+  for (const per of all ? r.days.map((d) => d.byProjectPhase || {}) : [selectedPeriod().byProjectPhase || {}])
+    for (const [proj, ph] of Object.entries(per)) for (const [k, m] of Object.entries(ph)) {
+      const row = (sum[proj] ||= Object.create(null));
+      row[k] = (row[k] || 0) + m;
+    }
+  const rows = Object.entries(sum).map(([name, ph]) => ({ key: name, label: name, ph, total: Object.values(ph).reduce((a, m) => a + m, 0) }))
+    .filter((x) => x.total > 0).sort((a, b) => b.total - a.total || a.label.localeCompare(b.label));
+  // phases in lifecycle order (Settings), then any other phase found, then internal work and "no phase"
+  const named = Object.fromEntries((r.phases || []).map((p) => [p.token, p.name]));
+  const used = new Set(rows.flatMap((x) => Object.keys(x.ph)));
+  const others = [...used].filter((k) => k && k !== "internal" && !Object.hasOwn(named, k)).sort();
+  const palette = [...(r.phases || []).map((p) => p.token), ...others, "internal"];
+  const order = [...palette, ""].filter((k) => used.has(k));
+  // a phase keeps its colour in every period: its place in the lifecycle (Settings), then the other phases, then internal
+  const SLOTS = [1, 2, 3, 4, 6, 7, 5];
+  const color = (k) => (k === "" ? "var(--c-other)" : `var(--c${SLOTS[palette.indexOf(k) % SLOTS.length]})`);
+  const label = (k) => (k === "" ? tr("No phase") : k === "internal" ? tr("Internal")
+    : Object.hasOwn(named, k) && named[k] !== k ? `${tr(named[k])} (${k})` : k);
+  const series = order.map((k) => ({ id: `ph-${k || "none"}`, label: label(k), color: color(k), value: (x) => x.ph[k] || 0 }));
+  return { all, rows, shown: rows.slice(0, TOP_BARS), series };
+}
+const topBars = (w) => { const d = topData(lastReport); return stackedBars(d.shown, d.series, "project", w); };
+function topCard(r) {
+  const { all, rows, series } = topData(r);
+  const toggle = `<div class="seg" role="group" aria-label="period">${[["sel", "Selected period"], ["all", "All time"]].map(([g, l]) =>
+    `<button class="chip ${chartGran.top === g ? "on" : ""}" data-chart="top" data-gran="${g}">${l}</button>`).join("")}</div>`;
+  return `
+    <div class="chart-head"><h2>Projects you spent the most time on</h2>
+      <span class="small muted">${esc(all ? "" : selectedTitle(selectedPeriod()))}</span><span class="grow"></span>${toggle}</div>
+    ${rows.length ? `
+      <div class="kpis">${series.map((s) => `<div><b>${esc(hrs(rows.reduce((a, x) => a + s.value(x), 0)))}</b><span>${esc(s.label)}</span></div>`).join("")}</div>
+      ${legend(series)}
+      <div class="bars-host" data-bars="top">${topBars(1200)}</div>
+      <p class="small muted">${rows.length > TOP_BARS ? `${rows.length - TOP_BARS} more projects not shown · ` : ""}Vacation and absence are not counted. Hover a bar for the hours of each phase.</p>
+      ${tableView(["Project", ...series.map((s) => s.label), "Total"], rows.map((x) => [x.label, ...series.map((s) => hrs(s.value(x))), hrs(x.total)]))}`
+    : `<p class="muted empty">${all ? "No project hours in Jira yet." : `No project hours in Jira for this ${chartSel.mode}.`}</p>`}`;
+}
+
 const legend = (series) => `<div class="legend chart-legend">${series.map((s) =>
   `<span><i class="${s.hatch ? "hatch" : ""}" style="--sw:${s.color}"></i>${esc(s.label)}</span>`).join("")}</div>`;
 
@@ -1776,21 +1842,24 @@ function isSelectedBar(p, gran) {
   return iso(addDays(dOf(p.key), 3)).slice(0, 7) === chartSel.key;
 }
 
-/** Vertical stacked bars sized to `width`; 2px gaps, rounded top, hover for numbers, click to select. */
+/** Vertical stacked bars sized to `width`; 2px gaps, rounded top, hover for numbers, click to select.
+    gran "project": one bar per project (its name below, its hours on top), nothing to select. */
 function stackedBars(periods, series, gran, width) {
   if (!periods.length) return `<p class="muted">No data yet.</p>`;
   const totalOf = (p) => series.reduce((a, s) => a + s.value(p), 0);
   const maxH = Math.max(1, ...periods.map((p) => totalOf(p) / 60));
-  const step = [2, 4, 5, 10, 20, 40, 50, 100, 200].find((x) => maxH / x <= 5) || 200;
+  const step = [2, 4, 5, 10, 20, 40, 50, 100, 200, 250, 500, 1000, 2000, 5000].find((x) => maxH / x <= 5) || 10000;
   const top = Math.ceil(maxH / step) * step;
-  const L = 40, T = 10, H = 230, B = 30, Wd = Math.max(240, Math.floor(width));
+  const byProject = gran === "project";
+  const L = 40, T = byProject ? 22 : 10, H = 230, B = 30, Wd = Math.max(240, Math.floor(width));
   const slot = (Wd - L - 8) / periods.length;
-  const barW = Math.max(8, Math.min(64, slot * 0.6));
+  // projects: the bars share the whole width (a few projects = wide bars); periods: at most 64px each
+  const barW = byProject ? Math.max(8, Math.min(220, slot * 0.6)) : Math.max(8, Math.min(64, slot * 0.6));
   const y = (m) => T + H - (m / 60 / top) * H;
   let grid = "";
   for (let v = 0; v <= top; v += step)
     grid += `<line x1="${L}" x2="${Wd - 4}" y1="${y(v * 60)}" y2="${y(v * 60)}" class="gl"/><text x="${L - 6}" y="${y(v * 60) + 4}" text-anchor="end" class="ax">${v}h</text>`;
-  const every = Math.ceil(36 / slot); // thin out x labels when bars are narrow
+  const every = byProject ? 1 : Math.ceil(36 / slot); // thin out x labels when bars are narrow
   const bars = periods.map((p, i) => {
     const x0 = L + i * slot, x = x0 + (slot - barW) / 2;
     let base = T + H;
@@ -1801,16 +1870,23 @@ function stackedBars(periods, series, gran, width) {
       base = yy;
       return k === visible.length - 1 ? `<path d="${topRounded(x, yy, barW, h2, 4)}" fill="${fill}"/>` : `<rect x="${x}" y="${yy}" width="${barW}" height="${h2}" fill="${fill}"/>`;
     }).join("");
-    const on = isSelectedBar(p, gran);
-    const tip = `${gran === "week" ? `Week ${isoWeekNo(p.from)} · ${p.label}` : p.label}\n${series.map((s) => `${s.label}: ${hrs(s.value(p))}`).join("\n")}\n(click to select)`;
-    const label = gran === "week" ? p.label : p.label.replace(/\s\d{4}$/, "");
+    const on = !byProject && isSelectedBar(p, gran);
+    const tip = byProject
+      ? `${p.label}\n${visible.map((s) => `${s.label}: ${hrs(s.value(p))}`).join("\n")}\n${tr("Total")}: ${hrs(totalOf(p))}`
+      : `${gran === "week" ? `Week ${isoWeekNo(p.from)} · ${p.label}` : p.label}\n${series.map((s) => `${s.label}: ${hrs(s.value(p))}`).join("\n")}\n(click to select)`;
+    // a project name is cut to the width of its bar (the whole name is in the tooltip)
+    const fit = Math.max(4, Math.floor(slot / 6.4));
+    const short = byProject ? p.label.replace(/^\S*\d\S*\s+(?:[-–·]\s+)?(?=\S)/, "") : "";
+    const label = byProject ? (short.length > fit ? `${short.slice(0, fit - 1)}…` : short) : gran === "week" ? p.label : p.label.replace(/\s\d{4}$/, "");
+    const sum = byProject ? `<text x="${x0 + slot / 2}" y="${y(totalOf(p)) - 6}" text-anchor="middle" class="ax on" data-notr>${esc(hrs(totalOf(p)))}</text>` : "";
     return `${on ? `<rect x="${x0 + 2}" y="${T}" width="${slot - 4}" height="${H}" rx="6" class="selband"/>` : ""}${segs}
-      <rect x="${x0}" y="${T}" width="${slot}" height="${H + B}" class="hit" data-tip="${esc(tip)}" data-sel-period="${gran}|${p.key}"/>
-      ${i % every === 0 || on ? `<text x="${x0 + slot / 2}" y="${T + H + 18}" text-anchor="middle" class="ax ${on ? "on" : ""}">${esc(label)}</text>` : ""}`;
+${sum}
+      <rect x="${x0}" y="${T}" width="${slot}" height="${H + B}" class="${byProject ? "hit info-only" : "hit"}" data-tip="${esc(tip)}"${byProject ? " data-notr" : ` data-sel-period="${gran}|${p.key}"`}/>
+      ${i % every === 0 || on ? `<text x="${x0 + slot / 2}" y="${T + H + 18}" text-anchor="middle" class="ax ${on ? "on" : ""}"${byProject ? " data-notr" : ""}>${esc(label)}</text>` : ""}`;
   }).join("");
   const hatches = series.filter((s) => s.hatch).map((s) => `<pattern id="hatch-${s.id}" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
     <rect width="6" height="6" fill="${s.color}" opacity=".35"/><rect width="3" height="6" fill="${s.color}"/></pattern>`).join("");
-  return `<svg class="bars" viewBox="0 0 ${Wd} ${T + H + B}" width="${Wd}" height="${T + H + B}" role="img" aria-label="${esc(series.map((s) => s.label).join(", "))} per ${gran}">
+  return `<svg class="bars" viewBox="0 0 ${Wd} ${T + H + B}" width="${Wd}" height="${T + H + B}" role="img" aria-label="${esc(byProject ? "Hours per project and phase" : `${series.map((s) => s.label).join(", ")} per ${gran}`)}">
     <defs>${hatches}</defs>${grid}${bars}</svg>`;
 }
 const topRounded = (x, y, w, h, r) => {
@@ -1890,6 +1966,16 @@ const showCrash = (e) => {
 };
 window.addEventListener("error", (ev) => showCrash(ev.error || ev.message));
 window.addEventListener("unhandledrejection", (ev) => showCrash(ev.reason));
+// the language in the settings wins over the one remembered in this browser (e.g. changed in another window)
+chrome.storage.local.get("settings").then((o) => {
+  const l = o?.settings?.language === "it" ? "it" : "en";
+  if (l === getLanguage()) return;
+  setLanguage(l);
+  if (l === "it") { startTranslating(); return; } // translated in place
+  // back to the English page as written: reloaded once (not again if this browser can't remember the choice)
+  try { if (sessionStorage.getItem("timefill_lang_reload")) return; sessionStorage.setItem("timefill_lang_reload", "1"); } catch { return; }
+  location.reload();
+}, () => {});
 loadIssueOptions();
 watchOutlookTabs().catch(() => {}); // the Outlook tabs are read only while this page is open
 checkUpdates(false);

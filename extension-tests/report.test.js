@@ -83,3 +83,23 @@ test("an internal issue counts in the chart you chose for it (default: internal)
   const r = buildReport([wl("INT-19", "2026-11-03T08:00", 2)], [TRAINING], S, { from: "2026-11-02", to: "2026-11-06", today: "2026-11-06" });
   assert.equal(r.weeks[0].byCategory.install, 120);
 });
+
+test("projects you spent the most time on: hours per project and phase, vacation left out", () => {
+  const worklogs = [
+    wl("PRJ-224", "2026-11-02T08:00", 6), wl("PRJ-226", "2026-11-03T08:00", 3), wl("PRJ-221", "2026-11-03T13:00", 1),
+    wl("STUDY-25", "2026-11-04T08:00", 2), wl("INT-19", "2026-11-04T13:30", 2),
+    wl("LEAVE-1", "2026-11-05T08:00", 8), wl("OTHER-9", "2026-11-05T09:00", 1, "26.012.P01 Other job · EXEC · SD"),
+  ];
+  const r = buildReport(worklogs, [ALPHA, SDF, GEN], S, { from: "2026-11-02", to: "2026-11-06", today: "2026-11-06" });
+  const week = r.weeks.find((w) => w.key === "2026-11-02");
+  assert.deepEqual({ ...week.byProjectPhase["26.020.P01 Alpha"] }, { EXEC: 360, COMM: 180, INIT: 60 });
+  assert.deepEqual({ ...week.byProjectPhase["26.005 - Foxtrot Works"] }, { SDF: 120 });
+  assert.deepEqual({ ...week.byProjectPhase["Internal activities"] }, { internal: 120 });
+  assert.deepEqual({ ...week.byProjectPhase["26.012.P01 Other job"] }, { "": 60 }, "outside your projects: no phase");
+  assert.ok(!Object.values(week.byProjectPhase).some((ph) => Object.keys(ph).length === 0));
+  assert.equal(Object.values(week.byProjectPhase).flatMap((ph) => Object.values(ph)).reduce((a, m) => a + m, 0), 15 * 60, "the 8h of vacation are not counted");
+  assert.deepEqual(r.phases.map((p) => p.token), ["SDF", "INIT", "EXEC", "COMM"]);
+  // the days add up to the same
+  const day = r.days.find((d) => d.date === "2026-11-03");
+  assert.deepEqual({ ...day.byProjectPhase["26.020.P01 Alpha"] }, { COMM: 180, INIT: 60 });
+});

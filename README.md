@@ -86,6 +86,8 @@ Updates are then done by hand (see [Update](#update-to-a-new-version)).
 
 Open Timefill → **Settings**.
 
+0. **Language · Lingua:** English or Italiano. All of Timefill follows it (pages, messages, dates and the badge in
+   Outlook). Your own texts (event titles, project names) are never translated.
 1. **Jira URL:** `https://yourcompany.atlassian.net`.
    **Sign-in:** choose **E-mail + API token** (recommended, see [Jira API token](#jira-api-token)) and fill in your
    Jira e-mail and the token. Or keep "Use my Jira login in this browser": that needs no token, but you must stay
@@ -161,6 +163,10 @@ Add, remove or reorder rows to match how your team works.
    | dashed yellow | event without a matching project (click it to choose one) |
    | orange | Jira and your calendar don't match |
    | grey, crossed out | not filled: an event you chose not to fill (↺ brings it back), or one you declined or that was cancelled (click it to fill it anyway) |
+
+   Missing hours run from one event to the next, whatever the time now: a gap that has already started counts as
+   missing in full; later gaps today are faded. Hover the **ⓘ** next to a colour in the legend above the calendar
+   to see what you can do with those blocks.
 
 4. Fix anything that's wrong:
    - **Click a blue block** to change its project, phase or time, or choose *Don't fill*. **Send to Jira** in that
@@ -264,6 +270,10 @@ Pick a **day, week or month** in the small calendar (click a week number, a day,
   week or month. Internal projects count as *internal*; choose another type per issue (e.g. *training*, or
   *vacation / absence* for a leave or permit issue) in Projects → Internal projects → **Chart**. *General* is time
   on issues outside your projects.
+- **Projects you spent the most time on** (full width, below): a bar per project (your top 20), from most to fewest hours, each bar
+  stacked by phase in its own colour (e.g. *Project (EXEC)*, *Commissioning (COMM)*; internal projects and issues
+  outside your projects have their own colours). Vacation / absence is not counted. **Selected period** follows the
+  small calendar; **All time** counts everything since *Track from*. Hover a bar for the hours of each phase.
 
 Each chart has a *Show as table* view.
 

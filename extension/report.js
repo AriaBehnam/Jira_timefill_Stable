@@ -9,7 +9,8 @@
 
 import { addDaysIso, dateOf, isoOf, workWindows } from "./planner.js";
 import { isInternal, phaseType } from "./projects.js";
-import { INTERNAL_TYPES } from "./config.js";
+import { INTERNAL_TYPES, phasesOf } from "./config.js";
+import { dateLocale } from "./i18n.js";
 
 /** Types of work, in fixed order (their chart colors follow this order). */
 export const CATEGORIES = [
@@ -54,14 +55,28 @@ function projectOf(w, index, s) {
   return summary ? summary.split(" · ")[0] : w.issue;
 }
 
+/** The phase a worklog's hours count under in "projects you spent the most time on": the phase of a customer
+    project issue (EXEC, COMM, …), "internal" for internal projects, "" when there is none (issues outside your projects). */
+function phaseOf(w, index) {
+  const hit = index[w.issue];
+  if (!hit) return "";
+  if (isInternal(hit.project)) return "internal";
+  return hit.issue?.phase || "";
+}
+const addPhase = (to, project, phase, m) => {
+  const row = (to[project] ||= Object.create(null));
+  row[phase] = (row[phase] || 0) + m;
+};
+
 const monthKey = (iso) => iso.slice(0, 7);
-const monthLabel = (key) => dateOf(`${key}-01`).toLocaleDateString(undefined, { month: "short", year: "numeric" });
-const weekLabel = (monday) => dateOf(monday).toLocaleDateString(undefined, { day: "numeric", month: "short" });
+const monthLabel = (key) => dateOf(`${key}-01`).toLocaleDateString(dateLocale(), { month: "short", year: "numeric" });
+const weekLabel = (monday) => dateOf(monday).toLocaleDateString(dateLocale(), { day: "numeric", month: "short" });
 
 /**
  * worklogs: [{issue, summary, start:"YYYY-MM-DDTHH:MM", seconds}]
  * Returns { from, to, today, days, weeks, months, projectOrder, categories }. days: [{date, target, logged, missing}].
- * Each period: { key, label, from, to, target, logged, missing, byCategory, byProject } (minutes).
+ * Each period: { key, label, from, to, target, logged, missing, byCategory, byProject, byProjectPhase } (minutes);
+ * byProjectPhase = { project: { phase: minutes } } (no vacation). phases: [{ token, name }] in lifecycle order.
  * Missing = expected hours not in Jira, for finished days only (today is not counted yet).
  */
 export function buildReport(worklogs, projects, s, { from, to, today }) {
@@ -70,28 +85,29 @@ export function buildReport(worklogs, projects, s, { from, to, today }) {
   for (const w of worklogs) {
     const d = w.start.slice(0, 10);
     if (d < from || d > to) continue;
-    const day = (perDay[d] ||= { logged: 0, byCategory: {}, byProject: Object.create(null) }); // names from Jira: no built-in keys
+    const day = (perDay[d] ||= { logged: 0, byCategory: {}, byProject: Object.create(null), byProjectPhase: Object.create(null) }); // names from Jira: no built-in keys
     const m = Math.round((w.seconds || 0) / 60);
     day.logged += m;
     const c = categoryOf(w.issue, index, s);
     day.byCategory[c] = (day.byCategory[c] || 0) + m;
     const p = c === "vacation" ? null : projectOf(w, index, s); // vacation / absence is its own slice, not a project
-    if (p) day.byProject[p] = (day.byProject[p] || 0) + m;
+    if (p) { day.byProject[p] = (day.byProject[p] || 0) + m; addPhase(day.byProjectPhase, p, phaseOf(w, index), m); }
   }
 
   const weeks = new Map(), months = new Map(), days = [];
-  const bucket = (map, key, make) => map.get(key) || map.set(key, { key, ...make(), target: 0, logged: 0, missing: 0, byCategory: {}, byProject: Object.create(null) }).get(key);
+  const bucket = (map, key, make) => map.get(key) || map.set(key, { key, ...make(), target: 0, logged: 0, missing: 0, byCategory: {}, byProject: Object.create(null), byProjectPhase: Object.create(null) }).get(key);
   for (let d = from; d <= to; d = addDaysIso(d, 1)) {
     const target = workWindows(d, s).reduce((a, [x, y]) => a + y - x, 0);
-    const day = perDay[d] || { logged: 0, byCategory: {}, byProject: Object.create(null) };
+    const day = perDay[d] || { logged: 0, byCategory: {}, byProject: Object.create(null), byProjectPhase: Object.create(null) };
     const missing = d < today ? Math.max(0, target - day.logged) : 0;
-    days.push({ key: d, date: d, label: d, from: d, to: d, target, logged: day.logged, missing, byCategory: day.byCategory, byProject: day.byProject });
+    days.push({ key: d, date: d, label: d, from: d, to: d, target, logged: day.logged, missing, byCategory: day.byCategory, byProject: day.byProject, byProjectPhase: day.byProjectPhase });
     const wk = mondayOf(d), mo = monthKey(d);
     for (const b of [bucket(weeks, wk, () => ({ label: weekLabel(wk), from: wk, to: addDaysIso(wk, 6) })),
       bucket(months, mo, () => ({ label: monthLabel(mo), from: `${mo}-01`, to: isoOf(new Date(+mo.slice(0, 4), +mo.slice(5), 0)) }))]) {
       b.target += target; b.logged += day.logged; b.missing += missing;
       for (const [k, v] of Object.entries(day.byCategory)) b.byCategory[k] = (b.byCategory[k] || 0) + v;
       for (const [k, v] of Object.entries(day.byProject)) b.byProject[k] = (b.byProject[k] || 0) + v;
+      for (const [k, ph] of Object.entries(day.byProjectPhase)) for (const [x, v] of Object.entries(ph)) addPhase(b.byProjectPhase, k, x, v);
     }
   }
 
@@ -99,5 +115,6 @@ export function buildReport(worklogs, projects, s, { from, to, today }) {
   const totals = {};
   for (const day of Object.values(perDay)) for (const [k, v] of Object.entries(day.byProject)) totals[k] = (totals[k] || 0) + v;
   const projectOrder = Object.keys(totals).sort((a, b) => totals[b] - totals[a] || a.localeCompare(b));
-  return { from, to, today, days, weeks: [...weeks.values()], months: [...months.values()], projectOrder, categories: CATEGORIES };
+  const phases = phasesOf(s).map(({ token, name }) => ({ token, name }));
+  return { from, to, today, days, weeks: [...weeks.values()], months: [...months.values()], projectOrder, categories: CATEGORIES, phases };
 }

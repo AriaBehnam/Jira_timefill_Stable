@@ -575,3 +575,10 @@ test("speed: the Charts read this week first (quick), then the whole history", a
   const full = await handle("GET", "/api/report?fresh=1");
   assert.equal(full.partial, undefined);
 });
+
+test("language: English unless Italiano is chosen; anything else falls back to English", async () => {
+  assert.equal((await handle("GET", "/api/settings")).language, "en");
+  assert.equal((await handle("POST", "/api/settings", { language: "it" })).language, "it");
+  assert.equal(store.settings.language, "it");
+  assert.equal((await handle("POST", "/api/settings", { language: "fr" })).language, "en");
+});

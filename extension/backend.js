@@ -14,6 +14,8 @@ import * as proj from "./projects.js";
 export const OUTLOOK_TABS = ["https://outlook.office.com/*", "https://outlook.office365.com/*", "https://outlook.cloud.microsoft/*"];
 
 export const DEFAULT_SETTINGS = {
+  // the language of Timefill's pages and of its badge in Outlook: "en" (English) or "it" (Italiano)
+  language: "en",
   // Jira
   jira_url: "",
   jira_auth: "browser", // "browser" (your Chrome login) or "token"
@@ -93,6 +95,7 @@ async function saveSettings(body) {
     if (k === "jira_token" && !body[k]) continue; // empty field = keep the stored token
     cur[k] = body[k];
   }
+  cur.language = cur.language === "it" ? "it" : "en";
   if (cur.hours_per_weekday.length !== 7) throw new ApiError("hours per day needs 7 values");
   cur.hours_per_weekday = cur.hours_per_weekday.map((h) => parseFloat(h) || 0);
   for (const k of ["day_start", "lunch_start", "lunch_end"]) hm(cur[k]);

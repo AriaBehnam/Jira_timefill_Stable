@@ -496,14 +496,15 @@ test("an event you assigned by hand (posted by an older version: no event key re
   assert.deepEqual(day.diffs, []);
 });
 
-test("today: a missing gap that runs past 'now' is cut there (past part missing, the rest future)", () => {
-  const now = new Date(2026, 10, 9, 15, 0); // Monday 15:00
-  const day = buildDay(MON, [], [], [ALPHA], S, [], now);
+test("today: missing gaps go from event to event, never cut at 'now'", () => {
+  const now = new Date(2026, 10, 9, 8, 33); // Monday 08:33
+  const evs = [ev("Alpha E review", MON, "10:30", "11:30"), ev("Alpha E check", MON, "15:00", "16:00")];
+  const day = buildDay(MON, evs, [], [ALPHA], S, [], now);
   const gaps = day.missing_slots.map((m) => [m.start_hm, m.end_hm, m.future]);
-  assert.ok(gaps.some(([a, b, f]) => b === "15:00" && f === false), JSON.stringify(gaps));
-  assert.ok(gaps.some(([a, b, f]) => a === "15:00" && f === true), JSON.stringify(gaps));
-  assert.equal(day.missing_past, day.missing_slots.filter((m) => !m.future).reduce((n, m) => n + m.minutes, 0));
-  assert.ok(day.missing_past < day.missing, "only time already past counts as missing so far");
+  assert.deepEqual(gaps[0], ["08:00", "10:30", false], "started before now: missing as a whole");
+  assert.ok(!gaps.some(([a, b]) => a === "08:33" || b === "08:33"), JSON.stringify(gaps));
+  assert.ok(gaps.slice(1).every(([, , f]) => f === true), "gaps that start later than now are future");
+  assert.equal(day.missing_past, 150);
 });
 
 test("declined and cancelled events are never proposed and are listed for the calendar (grey)", () => {

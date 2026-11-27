@@ -338,10 +338,9 @@ export function buildDay(day, events, worklogs, projects, s, overrides, now, ign
   const diffs = beforeStart(day, s) || onLeave ? { list: [], ignored: [] }
     : compareDay(day, events, loggedSegs, pieces, projects, s, overrides, rnd, ignoredDiffs, segments, links);
   for (let i = unmatched.length - 1; i >= 0; i--) if (diffs.linked?.has(unmatched[i].key)) unmatched.splice(i, 1);
-  // Today, a gap that runs past "now" is cut there: the part already past is missing, the rest is just the future.
-  const cut = Math.round((now - dateOf(day)) / 60000);
-  const gaps = free.flatMap(([a, b]) => (cut > a && cut < b ? [[a, cut], [cut, b]] : [[a, b]]));
-  const missing = gaps.map(([a, b]) => ({ start: a, end: b, start_hm: fmt(a), end_hm: fmt(b), minutes: b - a, future: isFuture(b) }));
+  // A gap runs from one event to the next, whatever the time now: a gap that has already started is missing as a
+  // whole; only a gap that starts later than now is "future" (faded today, blank on later days).
+  const missing = free.map(([a, b]) => ({ start: a, end: b, start_hm: fmt(a), end_hm: fmt(b), minutes: b - a, future: isFuture(a) }));
   for (const m of missing) segments.push({ start: m.start, end: m.end, kind: "missing", future: m.future });
   // the lunch band marks only lunch time that nothing is booked on
   if (windows.length === 2) {

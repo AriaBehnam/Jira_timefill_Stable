@@ -3,6 +3,67 @@
 All notable changes to the Timefill Chrome extension (`extension/`). Timefill is designed by Aria Behnam.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions match `extension/manifest.json`.
 
+## [3.0.0] - 2026-11-27
+
+Timefill 3: everything since 2.6.0 in one release (Italian, missing hours that follow your events, ⓘ help on the
+Status page, the "Projects you spent the most time on" chart), checked again for safety and stability.
+
+### Changed
+- **Your own texts are never translated** in Italian: project names, event titles, Jira summaries and comments stay as
+  you wrote them, also where one looks like an ordinary word (e.g. a project called "Training").
+- The Status header says **missing** instead of "missing so far": it counts every gap that has started.
+- Under the bars of *Projects you spent the most time on*, a project's name is shown without its leading code
+  ("26.020.P01 - Alpha" → "Alpha"), so the name fits; the whole name is in the tooltip.
+- Charts with very many hours (e.g. *All time*) keep a readable number of lines on the hours axis.
+
+### Fixed
+- Switching back to English could, in a browser that can't save the choice, reload the page again and again. It now
+  reloads once.
+
+## [2.9.2] - 2026-11-27
+
+### Changed
+- **"Projects you spent the most time on" shows up to 20 projects** (was 15); the others are counted below the chart
+  and listed in *Show as table*. With fewer projects the columns get wider, so they fill the chart.
+
+## [2.9.1] - 2026-11-27
+
+### Changed
+- **"Projects you spent the most time on" has vertical bars**, like *Time by type of work*: one bar per project (most
+  hours first, its hours on top, its name below), stacked by phase, with the hours of each phase above the legend.
+
+## [2.9.0] - 2026-11-27
+
+### Added
+- **Charts: "Projects you spent the most time on"**, a full-width chart below the others. Your projects are ranked
+  from most to fewest hours, and each bar is split by phase, one colour per phase (a phase keeps its colour in every
+  period; internal projects and issues outside your projects have their own). Vacation and absence are not counted.
+  **Selected period** follows the small calendar; **All time** counts everything since *Track from*. Hover a bar for
+  the hours of each phase; *Show as table* lists them all. In English and Italian.
+
+## [2.8.0] - 2026-11-27
+
+### Changed
+- **Missing hours follow your events, not the clock.** A gap runs from one event to the next: if it has already
+  started, the whole gap is missing (e.g. 08:00–10:30 with your next event at 10:30, also at 08:33). It used to be
+  cut at the current time into a "missing" part and a faded part. Gaps that start later today are still faded.
+- **The help below the Status calendar moved into ⓘ icons** next to the colours of the legend (already logged,
+  to fill, missing, not matched, Jira ≠ calendar, not filled / declined). Hover one to see what you can do with
+  those blocks. In English and in Italian.
+
+## [2.7.0] - 2026-11-27
+
+### Added
+- **Italian.** Settings → **Language · Lingua** chooses English or Italiano. All of Timefill follows it: the pages,
+  buttons, help texts, tooltips, messages, dates (e.g. "lun 23 nov", mini calendar "L M M G V S D") and the badge in
+  Outlook ("Timefill · letto 23–27 nov · 35 eventi"). Your own texts (event titles, project names, Jira keys) are
+  never translated. The choice is saved with your settings and applied as soon as you press Save.
+- The Italian texts live in one file, `extension/i18n-it.js` (English → Italian), so a wording can be changed in one
+  place.
+
+### Changed
+- In English, dates are now written in English too (they used to follow the computer's language).
+
 ## [2.6.0] - 2026-11-27
 
 ### Fixed
