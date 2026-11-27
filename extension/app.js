@@ -165,7 +165,7 @@ async function renderProjects(autoRefresh = true) {
           .map(([k, l]) => `<button class="chip ${projFilter === k ? "on" : ""}" data-filter="${esc(k)}">${esc(l)}</button>`).join("")}
       </div>
       <span class="grow"></span>
-      <span class="small muted">${trh("help.keywords", `Calendar title = keyword + <b>E</b> (engineering/SD) or <b>M</b> (management) — e.g. “Alpha E layout review”. A keyword with several words (“echo plc”) needs all of them in the title; commas separate keywords.`)}</span>
+      <span class="small muted">${trh("help.keywords", `Calendar title = keyword + <b>E</b> (engineering/SD) or <b>M</b> (management) — e.g. “Alpha E layout review”. A keyword with several words (“echo plc”) needs all of them in the title, and wins over a shorter one (“echo”); commas separate keywords (any one of them is enough).`)}</span>
     </div>
     <div class="card">
       <table class="projects">
@@ -566,8 +566,18 @@ function drawStatus(plan, fresh, sameWeek, scrollY, calScroll = null) {
     const box = document.getElementById("cal-scroll");
     if (box && calScroll !== null) box.scrollTop = calScroll;
   }
+  fitCalendar();
   if (plan.jira_ok) prefetchNeighbours();
 }
+
+/** The week calendar reaches down to the bottom of the window (it scrolls inside), with no empty space under it. */
+function fitCalendar() {
+  const box = document.getElementById("cal-scroll");
+  if (!box) return;
+  const top = box.getBoundingClientRect().top + window.scrollY;
+  box.style.maxHeight = `${Math.max(320, window.innerHeight - top - 16)}px`;
+}
+window.addEventListener("resize", () => { if (currentView() === "status") fitCalendar(); });
 
 /* The week before and after the one shown are loaded from Jira in the background (Outlook is not touched), so
    going to them with ‹ › is instant. Once per week per page visit; a Refresh reads again. */

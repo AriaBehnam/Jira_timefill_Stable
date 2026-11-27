@@ -234,6 +234,7 @@ export function buildDay(day, events, worklogs, projects, s, overrides, now, ign
   // calendar events you edited (moved, resized, other issue, "don't fill") -> event key -> overrides
   const replaced = new Map();
   for (const o of overrides) if (o.replaces) replaced.set(o.replaces, [...(replaced.get(o.replaces) || []), o]);
+  const editedSpan = new Map(); // event key -> [start, end] of a calendar event you edited, as it is in the calendar
   for (const o of overrides)
     if (o.date === day && !o.skip && !beforeStart(day, s))
       cands.push([0, 0, hm(o.start), hm(o.end), { issue: o.issue, label: o.label || "manual", kind: "planned", source: "manual", override_id: o.id, replaces: o.replaces || null }]);
@@ -253,6 +254,7 @@ export function buildDay(day, events, worklogs, projects, s, overrides, now, ign
     const info = { key, subject: ev.subject, start: fmt(st), end: fmt(en), s: st, e: en, all_day: !!ev.allDay, busy: ev.busy };
     const edits = replaced.get(key);
     if (edits) { // you changed this event on the Status page: your version is used instead
+      if (!ev.allDay) editedSpan.set(key, [st, en]);
       const skip = edits.find((o) => o.skip && !o.posted);
       if (skip && edits.every((o) => o.skip)) dismissed.push({ ...info, override_id: skip.id });
       continue;
@@ -278,15 +280,23 @@ export function buildDay(day, events, worklogs, projects, s, overrides, now, ign
   // Calendar events are shown exactly like the calendar: two events at the same time are BOTH proposed in full
   // (side by side), never cut into pieces by each other. You split them yourself. They are still cut by what is
   // already in Jira and by your manual entries.
+  // A calendar event you edited (other issue, moved, resized) stays side by side with the events it was next to in
+  // the calendar; moved onto another event, it takes that time (your change wins). An entry you created yourself
+  // always takes the time.
   let calFree = free;
+  const editedPieces = []; // [start, end, the edited event's time in the calendar]
   for (const [, , st, en, info] of cands) {
     const asInCalendar = info.source === "calendar";
+    const editedEvent = info.source === "manual" && editedSpan.has(info.replaces);
     // vacation fills working hours only (never lunch, never 24h)
-    const area = asInCalendar ? calFree : info.kind === "vacation" ? inWindows(free) : info.source === "manual" ? manualFree : free;
+    let area = asInCalendar ? calFree : info.kind === "vacation" ? inWindows(free) : info.source === "manual" ? manualFree : free;
+    if (asInCalendar)
+      for (const [a, b, [os, oe]] of editedPieces) if (!(os < en && oe > st)) area = subtract(area, a, b);
     for (const [a, b] of intersect(area, st, en)) {
       pieces.push({ start: a, end: b, ...info });
       free = subtract(free, a, b);
-      if (info.source === "manual") { calFree = subtract(calFree, a, b); manualFree = subtract(manualFree, a, b); }
+      if (editedEvent) { editedPieces.push([a, b, editedSpan.get(info.replaces)]); manualFree = subtract(manualFree, a, b); }
+      else if (info.source === "manual") { calFree = subtract(calFree, a, b); manualFree = subtract(manualFree, a, b); }
     }
   }
   // all your entries: one that replaces this day's all-day event may have been moved to another day

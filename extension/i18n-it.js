@@ -611,6 +611,6 @@ export const IT_HTML = {
   "help.phases": `<div class="help" style="margin-bottom:8px">I titoli delle tue issue Jira finiscono con una <b>fase</b> e un <b>ruolo</b>, es. “26.001.P01 Big Job · <b>EXEC</b> · <b>SD</b>”.
           Indica a Timefill come sono scritti in Jira, come chiamarli e quali parole nel titolo di un evento del calendario li scelgono
           (parole intere, maiuscole o minuscole: “Big Job <b>E</b> <b>installation</b> check”).</div>`,
-  "help.keywords": `Titolo nel calendario = parola chiave + <b>E</b> (ingegneria/SD) o <b>M</b> (management) — es. “Alpha E layout review”. Una parola chiave di più parole (“echo plc”) le richiede tutte nel titolo; le virgole separano le parole chiave.`,
+  "help.keywords": `Titolo nel calendario = parola chiave + <b>E</b> (ingegneria/SD) o <b>M</b> (management) — es. “Alpha E layout review”. Una parola chiave di più parole (“echo plc”) le richiede tutte nel titolo e vince su una più corta (“echo”); le virgole separano le parole chiave (ne basta una).`,
   "help.minical": `Clicca il <b>numero di una settimana</b> per quella settimana, un <b>giorno</b> solo per quel giorno, o il <b>nome del mese</b> per tutto il mese. I grafici seguono la tua scelta.`,
 };

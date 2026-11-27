@@ -3,6 +3,20 @@
 All notable changes to the Timefill Chrome extension (`extension/`). Timefill is designed by Aria Behnam.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions match `extension/manifest.json`.
 
+## [3.0.1] - 2026-11-27
+
+### Fixed
+- **An event you edited pushed away the other event at the same time.** With two events side by side (e.g. "Golf -
+  quick review" and "golf land", both 08:30–09:00), changing one of them (another issue, its time) made the other
+  disappear from "to fill" and show in orange as *not in Jira at this time*. Both now stay side by side, as in your
+  calendar. Moving an edited event onto another event's time still takes that time (your change wins).
+
+### Changed
+- **No empty space under the Status calendar:** it reaches down to the bottom of the window and scrolls inside.
+- Keyword matching is unchanged, now explained on the Projects page and in the README: a space means AND (all the
+  words must be in the title) and the keyword with more words wins over a shorter one ("golf land" over "golf"); a
+  comma means OR.
+
 ## [3.0.0] - 2026-11-27
 
 Timefill 3: everything since 2.6.0 in one release (Italian, missing hours that follow your events, ⓘ help on the

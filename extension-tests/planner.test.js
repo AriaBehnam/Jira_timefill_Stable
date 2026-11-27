@@ -5,7 +5,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { buildDay, buildPlan, eventKey, keywordMatches, workWindows } from "../extension/planner.js";
+import { buildDay, buildPlan, eventKey, keywordMatches, matchTarget, workWindows } from "../extension/planner.js";
 import { parseSummary } from "../extension/projects.js";
 import { DEFAULTS, ALPHA, phased, ev } from "./helpers.js";
 
@@ -522,4 +522,34 @@ test("a declined meeting you fill anyway: your entry takes its place, the grey b
   const after = buildDay(MON, [meeting], [], [ALPHA], S, fill, LATER);
   assert.deepEqual(after.skipped_events, []);
   assert.deepEqual(after.entries.map((e) => [e.issue, e.start_hm, e.end_hm]), [["PRJ-224", "09:00", "10:00"]]);
+});
+
+// Two projects share a word: "golf" (an internal issue) and "golf land" (a customer project).
+const GOLF_LAND = { id: "e-gl", kind: "epic", name: "26.120 - Golf Landing", keywords: ["golf land"], status_mode: "auto", auto_internal: false,
+  issues: [{ key: "SDF-149", label: "SDF · SD", phase: "SDF", role: "SD", status_category: "new" }] };
+const SUPPORT = { id: "e-sup", kind: "epic", name: "Support", keywords: [], status_mode: "auto", auto_internal: true,
+  issues: [{ key: "GEN-5", label: "Support", keywords: ["golf", "help desk"], status_category: "new" }] };
+
+test("keywords: a space means AND and wins over a shorter keyword; a comma means OR", () => {
+  for (const projects of [[GOLF_LAND, SUPPORT], [SUPPORT, GOLF_LAND]]) { // whatever the order of the projects
+    assert.equal(matchTarget("Golf - quick review", projects)?.issue, "GEN-5", "only 'golf': the general keyword");
+    assert.equal(matchTarget("golf land", projects)?.project.name, "26.120 - Golf Landing", "both words: the specific keyword wins");
+    assert.equal(matchTarget("Land check for Golf", projects)?.project.name, "26.120 - Golf Landing", "any order");
+    assert.equal(matchTarget("Help desk call", projects)?.issue, "GEN-5", "the other keyword (comma = or)");
+    assert.equal(matchTarget("Landing gear", projects), null, "'land' alone is not enough");
+  }
+});
+
+test("a calendar event you edited stays side by side with the events next to it in the calendar", () => {
+  const S2 = { ...S, track_from: "2026-10-01" };
+  const a = ev("Golf - quick review", MON, "08:30", "09:00"), b = ev("golf land", MON, "08:30", "09:00");
+  const edit = { id: "o1", date: MON, start: "08:30", end: "09:00", issue: "PRJ-224", label: a.subject, replaces: eventKey(a) };
+  const day = buildDay(MON, [a, b], [], [GOLF_LAND, SUPPORT, ALPHA], S2, [edit], LATER);
+  assert.deepEqual(day.entries.map((e) => [e.issue, e.start_hm, e.end_hm]).sort(), [["PRJ-224", "08:30", "09:00"], ["SDF-149", "08:30", "09:00"]]);
+  assert.deepEqual(day.diffs, []);
+  // moved onto another event's time: your change takes that time
+  const moved = { ...edit, start: "10:00", end: "11:00" };
+  const c = ev("golf land design", MON, "10:00", "11:00");
+  const day2 = buildDay(MON, [a, c], [], [GOLF_LAND, SUPPORT, ALPHA], S2, [moved], LATER);
+  assert.deepEqual(day2.entries.map((e) => [e.issue, e.start_hm, e.end_hm]), [["PRJ-224", "10:00", "11:00"]]);
 });

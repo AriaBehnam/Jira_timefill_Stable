@@ -223,6 +223,7 @@ Nothing is removed from Jira or Outlook.
 | a phase word, e.g. `installation` | that phase, whatever the project's status. Without one, the project's current phase is used. |
 | a keyword with several words, e.g. `big job` | matches only if **all** the words are in the title, in any order |
 | several keywords separated by commas, e.g. `big job, bj, plant 3` | any one of them chooses the project |
+| two keywords that both fit, e.g. `big` (one project) and `big job` (another) | the one with more words wins: "Big job review" → `big job`, "Big review" → `big` |
 
 More rules:
 

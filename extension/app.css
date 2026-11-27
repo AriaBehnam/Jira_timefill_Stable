@@ -133,7 +133,9 @@ tr.closed td { opacity: .55; }
 .state-off, .state-untracked, .state-leave { background: #ece9e1; color: #9a968c; }
 /* week calendar */
 /* the calendar scrolls on its own; its day headers and all-day row stay on top (like frozen rows in a sheet) */
-.cal-wrap { overflow: auto; max-height: calc(100vh - 150px); margin-bottom: 10px; padding: 0; }
+.cal-wrap { overflow: auto; max-height: calc(100vh - 150px); margin-bottom: 0; padding: 0; }
+/* the Status page ends with the calendar: no empty band under it */
+main:has(#cal-scroll) { padding-bottom: 16px; }
 .cal-sticky { position: sticky; top: 0; z-index: 8; background: var(--paper); box-shadow: 0 1px 0 var(--line), 0 4px 8px -6px rgba(0,0,0,.25); }
 .cal { display: grid; grid-template-columns: 52px repeat(var(--cols), minmax(150px, 1fr)); min-width: 820px; }
 .cal-corner, .cal-dh { border-bottom: 1px solid var(--line); }
